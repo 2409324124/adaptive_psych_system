@@ -1,6 +1,6 @@
 # Adaptive Psych System Project Memory
 
-Last updated: 2026-04-10 19:36 Asia/Taipei
+Last updated: 2026-04-10 19:53 Asia/Taipei
 
 ## Project Goal
 
@@ -31,7 +31,12 @@ The root `D:\IPIP` directory is not currently a Git repository.
 adaptive_psych_system/
 +-- data/
 |   +-- ipip_items.json
+|   +-- ipip_full_item_bank.json
+|   +-- ipip_full_item_bank.csv
+|   +-- ipip_item_assignment_table.json
+|   +-- ipip_item_assignment_table.csv
 |   +-- mock_params.pt
+|   +-- raw/
 |   +-- sft_dataset.jsonl
 +-- engine/
 |   +-- __init__.py
@@ -44,6 +49,8 @@ adaptive_psych_system/
 +-- memory/
 |   +-- PROJECT_MEMORY.md
 |   +-- ARCHITECTURE_HANDOFF.md
++-- scripts/
+|   +-- prepare_ipip_data.py
 +-- tests/
 |   +-- test_irt.py
 |   +-- test_llm.py
@@ -121,6 +128,10 @@ Use GPU for PyTorch tensor operations when available, but keep CPU fallback for 
 Prepared data files:
 
 - `data/ipip_items.json`
+- `data/ipip_full_item_bank.json`
+- `data/ipip_full_item_bank.csv`
+- `data/ipip_item_assignment_table.json`
+- `data/ipip_item_assignment_table.csv`
 - `data/mock_params.pt`
 - `data/sft_dataset.jsonl`
 
@@ -138,6 +149,47 @@ Source reference:
 
 ```text
 https://ipip.ori.org/newBigFive5broadKey.htm
+```
+
+The full official IPIP alphabetical item list was pulled into:
+
+```text
+data/raw/ipip_alphabetical_item_list.html
+```
+
+Normalized outputs:
+
+```text
+data/ipip_full_item_bank.json
+data/ipip_full_item_bank.csv
+```
+
+Validation:
+
+```text
+item_count: 3320
+source_url: https://ipip.ori.org/AlphabeticalItemList.htm
+```
+
+The IPIP item assignment table was pulled into:
+
+```text
+data/raw/TedoneItemAssignmentTable30APR21.xlsx
+```
+
+Normalized outputs:
+
+```text
+data/ipip_item_assignment_table.json
+data/ipip_item_assignment_table.csv
+```
+
+Validation:
+
+```text
+row_count: 3805
+headers: instrument, alpha, key, text, label
+source_url: https://ipip.ori.org/TedoneItemAssignmentTable30APR21.xlsx
 ```
 
 `mock_params.pt` contains mock MIRT/2PL parameters:
@@ -165,6 +217,9 @@ Completed:
 - Generated mock item parameter tensor file.
 - Added this persistent memory document.
 - Added architecture handoff document with project vision and ethics constraints.
+- Pulled official IPIP raw item files into `data/raw/`.
+- Added `scripts/prepare_ipip_data.py` to normalize official IPIP HTML/XLSX files.
+- Generated full 3,320-item IPIP JSON/CSV files and 3,805-row assignment table JSON/CSV files.
 
 Not implemented yet:
 
@@ -251,6 +306,12 @@ Run a GPU smoke test:
 
 ```powershell
 conda run -n IPIP python -c "import torch; print(torch.cuda.is_available()); print(torch.cuda.get_device_name(0))"
+```
+
+Regenerate IPIP normalized data:
+
+```powershell
+conda run -n IPIP python scripts\prepare_ipip_data.py
 ```
 
 Recreate environment from file:

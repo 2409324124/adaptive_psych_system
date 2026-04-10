@@ -7,6 +7,8 @@ Dynamic adaptive psychological assessment system based on MIRT/CAT, PyTorch, loc
 - Conda environment: `IPIP`
 - PyTorch: CUDA-enabled build verified on RTX 4060 Laptop GPU
 - MVP item bank: public-domain IPIP Big-Five 50-item starter set
+- Full pulled item bank: official IPIP 3,320-item alphabetical list in `data/ipip_full_item_bank.json`
+- Item assignment table: `data/ipip_item_assignment_table.json`
 - Mock MIRT/2PL parameters: `data/mock_params.pt`
 - Architecture and project memory: `memory/`
 
@@ -22,6 +24,23 @@ For an existing environment:
 ```powershell
 conda env update -n IPIP -f environment.yml --prune
 ```
+
+## Data Preparation
+
+Official raw IPIP files are stored under `data/raw/`.
+
+Regenerate normalized JSON/CSV files:
+
+```powershell
+conda run -n IPIP python scripts\prepare_ipip_data.py
+```
+
+Generated outputs:
+
+- `data/ipip_full_item_bank.json`
+- `data/ipip_full_item_bank.csv`
+- `data/ipip_item_assignment_table.json`
+- `data/ipip_item_assignment_table.csv`
 
 ## Ethics Notice
 
