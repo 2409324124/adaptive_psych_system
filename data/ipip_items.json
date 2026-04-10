@@ -1,0 +1,78 @@
+{
+  "inventory": "IPIP Big-Five Factor Markers, 50-item public-domain starter set",
+  "source_url": "https://ipip.ori.org/newBigFive5broadKey.htm",
+  "response_scale": {
+    "min": 1,
+    "max": 5,
+    "labels": {
+      "1": "Very inaccurate",
+      "2": "Moderately inaccurate",
+      "3": "Neither accurate nor inaccurate",
+      "4": "Moderately accurate",
+      "5": "Very accurate"
+    }
+  },
+  "dimensions": [
+    "extraversion",
+    "agreeableness",
+    "conscientiousness",
+    "emotional_stability",
+    "intellect"
+  ],
+  "items": [
+    {"id": "IPIP50_E_001", "text": "Am the life of the party.", "dimension": "extraversion", "key": 1},
+    {"id": "IPIP50_E_002", "text": "Feel comfortable around people.", "dimension": "extraversion", "key": 1},
+    {"id": "IPIP50_E_003", "text": "Start conversations.", "dimension": "extraversion", "key": 1},
+    {"id": "IPIP50_E_004", "text": "Talk to a lot of different people at parties.", "dimension": "extraversion", "key": 1},
+    {"id": "IPIP50_E_005", "text": "Don't mind being the center of attention.", "dimension": "extraversion", "key": 1},
+    {"id": "IPIP50_E_006", "text": "Don't talk a lot.", "dimension": "extraversion", "key": -1},
+    {"id": "IPIP50_E_007", "text": "Keep in the background.", "dimension": "extraversion", "key": -1},
+    {"id": "IPIP50_E_008", "text": "Have little to say.", "dimension": "extraversion", "key": -1},
+    {"id": "IPIP50_E_009", "text": "Don't like to draw attention to myself.", "dimension": "extraversion", "key": -1},
+    {"id": "IPIP50_E_010", "text": "Am quiet around strangers.", "dimension": "extraversion", "key": -1},
+
+    {"id": "IPIP50_A_001", "text": "Am interested in people.", "dimension": "agreeableness", "key": 1},
+    {"id": "IPIP50_A_002", "text": "Sympathize with others' feelings.", "dimension": "agreeableness", "key": 1},
+    {"id": "IPIP50_A_003", "text": "Have a soft heart.", "dimension": "agreeableness", "key": 1},
+    {"id": "IPIP50_A_004", "text": "Take time out for others.", "dimension": "agreeableness", "key": 1},
+    {"id": "IPIP50_A_005", "text": "Feel others' emotions.", "dimension": "agreeableness", "key": 1},
+    {"id": "IPIP50_A_006", "text": "Make people feel at ease.", "dimension": "agreeableness", "key": 1},
+    {"id": "IPIP50_A_007", "text": "Am not really interested in others.", "dimension": "agreeableness", "key": -1},
+    {"id": "IPIP50_A_008", "text": "Insult people.", "dimension": "agreeableness", "key": -1},
+    {"id": "IPIP50_A_009", "text": "Am not interested in other people's problems.", "dimension": "agreeableness", "key": -1},
+    {"id": "IPIP50_A_010", "text": "Feel little concern for others.", "dimension": "agreeableness", "key": -1},
+
+    {"id": "IPIP50_C_001", "text": "Am always prepared.", "dimension": "conscientiousness", "key": 1},
+    {"id": "IPIP50_C_002", "text": "Pay attention to details.", "dimension": "conscientiousness", "key": 1},
+    {"id": "IPIP50_C_003", "text": "Get chores done right away.", "dimension": "conscientiousness", "key": 1},
+    {"id": "IPIP50_C_004", "text": "Like order.", "dimension": "conscientiousness", "key": 1},
+    {"id": "IPIP50_C_005", "text": "Follow a schedule.", "dimension": "conscientiousness", "key": 1},
+    {"id": "IPIP50_C_006", "text": "Am exacting in my work.", "dimension": "conscientiousness", "key": 1},
+    {"id": "IPIP50_C_007", "text": "Leave my belongings around.", "dimension": "conscientiousness", "key": -1},
+    {"id": "IPIP50_C_008", "text": "Make a mess of things.", "dimension": "conscientiousness", "key": -1},
+    {"id": "IPIP50_C_009", "text": "Often forget to put things back in their proper place.", "dimension": "conscientiousness", "key": -1},
+    {"id": "IPIP50_C_010", "text": "Shirk my duties.", "dimension": "conscientiousness", "key": -1},
+
+    {"id": "IPIP50_ES_001", "text": "Am relaxed most of the time.", "dimension": "emotional_stability", "key": 1},
+    {"id": "IPIP50_ES_002", "text": "Seldom feel blue.", "dimension": "emotional_stability", "key": 1},
+    {"id": "IPIP50_ES_003", "text": "Get stressed out easily.", "dimension": "emotional_stability", "key": -1},
+    {"id": "IPIP50_ES_004", "text": "Worry about things.", "dimension": "emotional_stability", "key": -1},
+    {"id": "IPIP50_ES_005", "text": "Am easily disturbed.", "dimension": "emotional_stability", "key": -1},
+    {"id": "IPIP50_ES_006", "text": "Get upset easily.", "dimension": "emotional_stability", "key": -1},
+    {"id": "IPIP50_ES_007", "text": "Change my mood a lot.", "dimension": "emotional_stability", "key": -1},
+    {"id": "IPIP50_ES_008", "text": "Have frequent mood swings.", "dimension": "emotional_stability", "key": -1},
+    {"id": "IPIP50_ES_009", "text": "Get irritated easily.", "dimension": "emotional_stability", "key": -1},
+    {"id": "IPIP50_ES_010", "text": "Often feel blue.", "dimension": "emotional_stability", "key": -1},
+
+    {"id": "IPIP50_I_001", "text": "Have a rich vocabulary.", "dimension": "intellect", "key": 1},
+    {"id": "IPIP50_I_002", "text": "Have a vivid imagination.", "dimension": "intellect", "key": 1},
+    {"id": "IPIP50_I_003", "text": "Have excellent ideas.", "dimension": "intellect", "key": 1},
+    {"id": "IPIP50_I_004", "text": "Am quick to understand things.", "dimension": "intellect", "key": 1},
+    {"id": "IPIP50_I_005", "text": "Use difficult words.", "dimension": "intellect", "key": 1},
+    {"id": "IPIP50_I_006", "text": "Spend time reflecting on things.", "dimension": "intellect", "key": 1},
+    {"id": "IPIP50_I_007", "text": "Am full of ideas.", "dimension": "intellect", "key": 1},
+    {"id": "IPIP50_I_008", "text": "Have difficulty understanding abstract ideas.", "dimension": "intellect", "key": -1},
+    {"id": "IPIP50_I_009", "text": "Am not interested in abstract ideas.", "dimension": "intellect", "key": -1},
+    {"id": "IPIP50_I_010", "text": "Do not have a good imagination.", "dimension": "intellect", "key": -1}
+  ]
+}

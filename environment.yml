@@ -1,0 +1,14 @@
+name: IPIP
+channels:
+  - pytorch
+  - nvidia
+  - conda-forge
+  - defaults
+dependencies:
+  - python=3.11
+  - pytorch=2.5.1
+  - pytorch-cuda=12.4
+  - numpy
+  - requests
+  - pytest
+  - pyyaml
