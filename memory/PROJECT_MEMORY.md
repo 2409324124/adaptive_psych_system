@@ -1,6 +1,6 @@
 # Adaptive Psych System Project Memory
 
-Last updated: 2026-04-10 20:43 Asia/Taipei
+Last updated: 2026-04-10 21:04 Asia/Taipei
 
 ## Project Goal
 
@@ -47,6 +47,16 @@ adaptive_psych_system/
 |   +-- __init__.py
 |   +-- ollama_client.py
 |   +-- prompt_templates.py
++-- services/
+|   +-- __init__.py
+|   +-- assessment_session.py
++-- api/
+|   +-- __init__.py
+|   +-- app.py
++-- web/
+|   +-- index.html
+|   +-- style.css
+|   +-- app.js
 +-- memory/
 |   +-- PROJECT_MEMORY.md
 |   +-- ARCHITECTURE_HANDOFF.md
@@ -95,6 +105,8 @@ dependencies:
   - pytorch-cuda=12.4
   - numpy
   - requests
+  - fastapi
+  - uvicorn
   - pytest
   - pyyaml
 ```
@@ -229,6 +241,10 @@ Completed:
 - Added IRT engine tests and `pytest.ini`.
 - Added `scripts/simulate_adaptive_sessions.py` to compare `binary_2pl`, `grm`, and classical Big Five outputs on fixed simulated personas.
 - Added `scripts/run_cli_assessment.py`, a manual terminal assessment demo with disclaimer, 1-5 input, IRT scores, classical Big Five comparison, and optional JSON output.
+- Added `services/assessment_session.py` as the shared assessment workflow layer for CLI/API/Web.
+- Added `api/app.py` with FastAPI session endpoints.
+- Added minimal Web app under `web/`.
+- Added FastAPI/API tests.
 
 Implemented engine modules:
 
@@ -283,10 +299,10 @@ System outputs should be framed as tendency scores or auxiliary screening result
    - `classical_big5` provides an interpretable IPIP-style baseline on the routed item subset.
    - Decide whether UI default should stay `binary_2pl` until calibrated GRM thresholds exist.
 
-2. Manually try the CLI and tune the first-screen experience:
-   - `conda run -n IPIP python scripts\run_cli_assessment.py --model binary_2pl --max-items 12`
-   - Check whether selected item order feels coherent.
-   - Check whether score movement is too aggressive.
+2. Try the local Web app and tune the first-screen experience:
+   - `uvicorn api.app:app --host 127.0.0.1 --port 8000 --reload`
+   - Open `http://127.0.0.1:8000`
+   - Check item flow, score display, and model choice.
 
 3. Implement `llm/ollama_client.py`:
    - Simple `requests` wrapper for local Ollama.
@@ -317,6 +333,13 @@ Run tests:
 
 ```powershell
 conda run -n IPIP pytest -q
+```
+
+Run FastAPI Web app:
+
+```powershell
+conda activate IPIP
+uvicorn api.app:app --host 127.0.0.1 --port 8000 --reload
 ```
 
 Regenerate IPIP normalized data:

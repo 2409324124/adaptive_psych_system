@@ -25,6 +25,27 @@ For an existing environment:
 conda env update -n IPIP -f environment.yml --prune
 ```
 
+## Web App
+
+Start the local FastAPI app:
+
+```powershell
+conda activate IPIP
+uvicorn api.app:app --host 127.0.0.1 --port 8000 --reload
+```
+
+Open:
+
+```text
+http://127.0.0.1:8000
+```
+
+API docs:
+
+```text
+http://127.0.0.1:8000/docs
+```
+
 ## Data Preparation
 
 Official raw IPIP files are stored under `data/raw/`.
