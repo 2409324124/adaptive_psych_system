@@ -25,7 +25,15 @@ def test_fastapi_session_flow() -> None:
     assert health.status_code == 200
     assert health.json()["status"] == "ok"
 
-    created = client.post("/sessions", json={"scoring_model": "binary_2pl", "max_items": 2, "device": "cpu"})
+    created = client.post(
+        "/sessions",
+        json={
+            "scoring_model": "binary_2pl",
+            "max_items": 2,
+            "device": "cpu",
+            "coverage_min_per_dimension": 1,
+        },
+    )
     assert created.status_code == 200
     payload = created.json()
     session_id = payload["session_id"]
@@ -53,3 +61,4 @@ def test_fastapi_session_flow() -> None:
     assert result_payload["progress"]["complete"] is True
     assert "irt_t_scores" in result_payload
     assert "classical_big5" in result_payload
+    assert "dimension_answer_counts" in result_payload

@@ -66,6 +66,19 @@ def test_binary_router_selects_without_repeating() -> None:
     assert router.remaining_count == 49
 
 
+def test_router_coverage_constraint_prioritizes_undercovered_dimensions() -> None:
+    router = AdaptiveMMPIRouter(device="cpu", scoring_model="binary_2pl", coverage_min_per_dimension=1)
+    seen_dimensions = set()
+
+    for _ in range(len(router.dimensions)):
+        item = router.select_next_item()
+        assert item is not None
+        seen_dimensions.add(str(item["dimension"]))
+        router.answer_item(str(item["id"]), 4)
+
+    assert seen_dimensions == set(router.dimensions)
+
+
 def test_binary_router_updates_theta_for_non_neutral_response() -> None:
     router = AdaptiveMMPIRouter(device="cpu", scoring_model="binary_2pl")
     item = router.select_next_item()

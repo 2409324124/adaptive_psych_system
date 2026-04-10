@@ -28,6 +28,7 @@ startBtn.addEventListener("click", async () => {
     body: JSON.stringify({
       scoring_model: modelInput.value,
       max_items: Number(maxItemsInput.value),
+      coverage_min_per_dimension: 2,
     }),
   });
   const payload = await response.json();
@@ -83,7 +84,7 @@ async function loadResults() {
     classical[trait] =
       score.tendency_t_score === null
         ? `NA (${score.answered_count})`
-        : `${score.tendency_t_score.toFixed(1)} (${score.answered_count})`;
+        : `${score.tendency_t_score.toFixed(1)} (${score.answered_count})${score.answered_count < 2 ? " low evidence" : ""}`;
   }
   renderScores(classicalScores, classical);
 }

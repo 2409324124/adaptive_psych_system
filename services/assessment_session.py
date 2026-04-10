@@ -14,10 +14,15 @@ class AssessmentSession:
     scoring_model: str = "binary_2pl"
     max_items: int = 12
     device: str | None = None
+    coverage_min_per_dimension: int = 2
     session_id: str = field(default_factory=lambda: uuid4().hex)
 
     def __post_init__(self) -> None:
-        self.router = AdaptiveMMPIRouter(scoring_model=self.scoring_model, device=self.device)
+        self.router = AdaptiveMMPIRouter(
+            scoring_model=self.scoring_model,
+            device=self.device,
+            coverage_min_per_dimension=self.coverage_min_per_dimension,
+        )
         self.classical = ClassicalBigFiveScorer(item_path=self.router.item_path)
         self.responses: dict[str, int] = {}
         self.path: list[dict[str, object]] = []
@@ -90,5 +95,6 @@ class AssessmentSession:
             "trait_estimates": self.router.trait_estimates(),
             "irt_t_scores": self.router.tendency_t_scores(),
             "classical_big5": self.classical.score(self.responses),
+            "dimension_answer_counts": self.router.dimension_answer_counts(),
             "path": self.path,
         }

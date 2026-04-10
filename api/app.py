@@ -22,6 +22,7 @@ class CreateSessionRequest(BaseModel):
     scoring_model: str = Field(default="binary_2pl", pattern="^(binary_2pl|grm)$")
     max_items: int = Field(default=12, ge=1, le=50)
     device: str | None = None
+    coverage_min_per_dimension: int = Field(default=2, ge=0, le=10)
 
 
 class ResponseRequest(BaseModel):
@@ -45,6 +46,7 @@ def create_session(payload: CreateSessionRequest) -> dict[str, object]:
         scoring_model=payload.scoring_model,
         max_items=payload.max_items,
         device=payload.device,
+        coverage_min_per_dimension=payload.coverage_min_per_dimension,
     )
     SESSIONS[session.session_id] = session
     return {

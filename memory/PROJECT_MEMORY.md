@@ -1,6 +1,6 @@
 # Adaptive Psych System Project Memory
 
-Last updated: 2026-04-10 21:04 Asia/Taipei
+Last updated: 2026-04-10 21:18 Asia/Taipei
 
 ## Project Goal
 
@@ -13,7 +13,7 @@ The MVP combines:
 - A PyTorch-based adaptive item selection engine.
 - An IPIP public-domain personality item pool.
 - A local Ollama-backed LLM semantic layer for interpreting free-text user input.
-- A lightweight Tkinter chat-style UI.
+- A FastAPI + Web MVP for browser-based interaction, with Tkinter kept as a later desktop target.
 
 ## Workspace
 
@@ -245,6 +245,8 @@ Completed:
 - Added `api/app.py` with FastAPI session endpoints.
 - Added minimal Web app under `web/`.
 - Added FastAPI/API tests.
+- Added coverage-aware routing so short adaptive sessions collect minimum early evidence across Big-Five dimensions before pure max-information selection.
+- Added Web result labeling for classical comparison traits with low answered-item evidence.
 
 Implemented engine modules:
 
@@ -259,7 +261,6 @@ Not implemented yet:
 - `ui/components.py`
 - `ui/app.py`
 - `main.py`
-- `tests/test_irt.py`
 - `tests/test_llm.py`
 
 ## Architecture Constraints To Preserve
@@ -297,12 +298,13 @@ System outputs should be framed as tendency scores or auxiliary screening result
    - `binary_2pl` currently moves theta more aggressively.
    - `grm` currently moves theta more conservatively because thresholds are derived from mock `b`.
    - `classical_big5` provides an interpretable IPIP-style baseline on the routed item subset.
-   - Decide whether UI default should stay `binary_2pl` until calibrated GRM thresholds exist.
+   - Keep `binary_2pl` as the Web default until calibrated GRM thresholds exist.
+   - Preserve coverage-aware routing for short sessions so every dimension has minimum evidence before final display.
 
-2. Try the local Web app and tune the first-screen experience:
+2. Continue tuning the local Web app:
    - `uvicorn api.app:app --host 127.0.0.1 --port 8000 --reload`
    - Open `http://127.0.0.1:8000`
-   - Check item flow, score display, and model choice.
+   - Check item flow, score display, model choice, and low-evidence labels.
 
 3. Implement `llm/ollama_client.py`:
    - Simple `requests` wrapper for local Ollama.

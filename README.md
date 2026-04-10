@@ -10,6 +10,7 @@ Dynamic adaptive psychological assessment system based on MIRT/CAT, PyTorch, loc
 - Full pulled item bank: official IPIP 3,320-item alphabetical list in `data/ipip_full_item_bank.json`
 - Item assignment table: `data/ipip_item_assignment_table.json`
 - Mock MIRT/2PL parameters: `data/mock_params.pt`
+- Adaptive routing: coverage-aware item selection keeps early short tests from ignoring low-evidence traits
 - Architecture and project memory: `memory/`
 
 ## Environment
@@ -70,6 +71,8 @@ The first engine pass supports two scoring modes:
 - `binary_2pl`: stable MVP path that maps Likert 1-2 to 0, 4-5 to 1, and skips theta updates for neutral 3.
 - `grm`: experimental graded response path that derives four ordered thresholds from the current mock `b` parameter at runtime.
 - `classical_big5`: traditional IPIP-style baseline scorer that reverse-keys items and averages Likert scores per trait for comparison.
+
+The router now applies a small coverage guard before pure maximum-information selection. By default, it tries to gather at least two answered items per Big-Five dimension before fully relaxing into global Fisher-information routing. The Web result view marks classical trait comparisons with `low evidence` when a trait has fewer than two answered items.
 
 Smoke test:
 

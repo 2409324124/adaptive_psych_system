@@ -48,6 +48,7 @@ class AdaptiveMMPIRouter:
         device: str | torch.device | None = None,
         binary_learning_rate: float = 0.35,
         grm_learning_rate: float = 0.08,
+        coverage_min_per_dimension: int = 2,
     ) -> None:
         self.root = Path(__file__).resolve().parents[1]
         self.item_path = Path(item_path) if item_path is not None else self.root / "data" / "ipip_items.json"
@@ -56,6 +57,7 @@ class AdaptiveMMPIRouter:
         self.device = resolve_device(device)
         self.binary_learning_rate = binary_learning_rate
         self.grm_learning_rate = grm_learning_rate
+        self.coverage_min_per_dimension = coverage_min_per_dimension
 
         self.items, self.dimensions, self.response_scale = self._load_items()
         self.a, self.b, self.param_metadata = self._load_params()
@@ -100,6 +102,8 @@ class AdaptiveMMPIRouter:
             raise ValueError("Parameter tensor dimension count must match item dimensions.")
         if self.scoring_model not in {"binary_2pl", "grm"}:
             raise ValueError("scoring_model must be either 'binary_2pl' or 'grm'.")
+        if self.coverage_min_per_dimension < 0:
+            raise ValueError("coverage_min_per_dimension must be non-negative.")
 
     @property
     def answered_count(self) -> int:
@@ -129,7 +133,8 @@ class AdaptiveMMPIRouter:
     def select_next_item(self) -> dict[str, object] | None:
         if self.remaining_count <= 0:
             return None
-        index = int(torch.argmax(self.information_scores()).item())
+        scores = self.information_scores()
+        index = self._coverage_aware_index(scores)
         item = self.items[index].to_dict()
         item["response_scale"] = self.response_scale
         item["scoring_model"] = self.scoring_model
@@ -179,6 +184,34 @@ class AdaptiveMMPIRouter:
             dimension: float(50.0 + 10.0 * theta_cpu[index])
             for index, dimension in enumerate(self.dimensions)
         }
+
+    def dimension_answer_counts(self) -> dict[str, int]:
+        counts = {dimension: 0 for dimension in self.dimensions}
+        for index in self.answered_indices:
+            counts[self.items[index].dimension] += 1
+        return counts
+
+    def _coverage_aware_index(self, scores: torch.Tensor) -> int:
+        if self.coverage_min_per_dimension <= 0:
+            return int(torch.argmax(scores).item())
+
+        counts = self.dimension_answer_counts()
+        undercovered = {
+            dimension
+            for dimension, count in counts.items()
+            if count < self.coverage_min_per_dimension
+        }
+        if not undercovered:
+            return int(torch.argmax(scores).item())
+
+        masked_scores = scores.clone()
+        for item in self.items:
+            if item.dimension not in undercovered:
+                masked_scores[item.index] = -torch.inf
+
+        if torch.isneginf(masked_scores).all():
+            return int(torch.argmax(scores).item())
+        return int(torch.argmax(masked_scores).item())
 
     def _index_for_item_id(self, item_id: str) -> int:
         for item in self.items:
