@@ -1,6 +1,6 @@
 # Adaptive Psych System Project Memory
 
-Last updated: 2026-04-10 20:20 Asia/Taipei
+Last updated: 2026-04-10 20:31 Asia/Taipei
 
 ## Project Goal
 
@@ -40,6 +40,7 @@ adaptive_psych_system/
 |   +-- sft_dataset.jsonl
 +-- engine/
 |   +-- __init__.py
+|   +-- classical_scoring.py
 |   +-- irt_model.py
 |   +-- math_utils.py
 +-- llm/
@@ -223,13 +224,15 @@ Completed:
 - Generated full 3,320-item IPIP JSON/CSV files and 3,805-row assignment table JSON/CSV files.
 - Implemented the first adaptive routing engine in `engine/`.
 - Added both `binary_2pl` and experimental `grm` scoring modes.
+- Added `ClassicalBigFiveScorer`, a traditional IPIP-style baseline that reverse-keys Likert items and averages per trait.
 - Added IRT engine tests and `pytest.ini`.
-- Added `scripts/simulate_adaptive_sessions.py` to compare `binary_2pl` and `grm` on fixed simulated personas.
+- Added `scripts/simulate_adaptive_sessions.py` to compare `binary_2pl`, `grm`, and classical Big Five outputs on fixed simulated personas.
 
 Implemented engine modules:
 
 - `engine/math_utils.py`
 - `engine/irt_model.py`
+- `engine/classical_scoring.py`
 
 Not implemented yet:
 
@@ -275,6 +278,7 @@ System outputs should be framed as tendency scores or auxiliary screening result
 1. Use simulation output to tune model defaults:
    - `binary_2pl` currently moves theta more aggressively.
    - `grm` currently moves theta more conservatively because thresholds are derived from mock `b`.
+   - `classical_big5` provides an interpretable IPIP-style baseline on the routed item subset.
    - Decide whether UI default should stay `binary_2pl` until calibrated GRM thresholds exist.
 
 2. Implement `llm/ollama_client.py`:

@@ -13,7 +13,7 @@ ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
-from engine import AdaptiveMMPIRouter
+from engine import AdaptiveMMPIRouter, ClassicalBigFiveScorer
 
 
 TRAIT_ORDER = [
@@ -61,7 +61,9 @@ def run_session(
     device: str | None,
 ) -> dict[str, object]:
     router = AdaptiveMMPIRouter(scoring_model=scoring_model, device=device)
+    classical = ClassicalBigFiveScorer(item_path=router.item_path)
     path: list[dict[str, object]] = []
+    responses: dict[str, int] = {}
 
     for step in range(max_items):
         item = router.select_next_item()
@@ -70,6 +72,7 @@ def run_session(
         item_index = int(item["index"])
         response = simulated_response(router, item_index, persona.theta)
         record = router.answer_item(str(item["id"]), response)
+        responses[str(item["id"])] = response
         path.append(
             {
                 "step": step + 1,
@@ -88,6 +91,7 @@ def run_session(
         "answered_count": router.answered_count,
         "trait_estimates": router.trait_estimates(),
         "tendency_t_scores": router.tendency_t_scores(),
+        "classical_big5": classical.score(responses),
         "path": path,
     }
 
@@ -95,15 +99,24 @@ def run_session(
 def summarize_session(session: dict[str, object]) -> str:
     traits = session["trait_estimates"]
     t_scores = session["tendency_t_scores"]
+    classical = session["classical_big5"]
     assert isinstance(traits, dict)
     assert isinstance(t_scores, dict)
+    assert isinstance(classical, dict)
     trait_bits = ", ".join(f"{trait}={traits[trait]:+.2f}" for trait in TRAIT_ORDER)
     t_bits = ", ".join(f"{trait}={t_scores[trait]:.1f}" for trait in TRAIT_ORDER)
+    classical_bits = ", ".join(
+        f"{trait}={classical[trait]['tendency_t_score']:.1f}"
+        if classical[trait]["tendency_t_score"] is not None
+        else f"{trait}=NA"
+        for trait in TRAIT_ORDER
+    )
     return (
         f"{session['persona']} / {session['scoring_model']} / "
         f"n={session['answered_count']}\n"
         f"  theta: {trait_bits}\n"
-        f"  T:     {t_bits}"
+        f"  IRT T: {t_bits}\n"
+        f"  classical T on routed items: {classical_bits}"
     )
 
 

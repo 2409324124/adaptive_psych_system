@@ -48,6 +48,7 @@ The first engine pass supports two scoring modes:
 
 - `binary_2pl`: stable MVP path that maps Likert 1-2 to 0, 4-5 to 1, and skips theta updates for neutral 3.
 - `grm`: experimental graded response path that derives four ordered thresholds from the current mock `b` parameter at runtime.
+- `classical_big5`: traditional IPIP-style baseline scorer that reverse-keys items and averages Likert scores per trait for comparison.
 
 Smoke test:
 

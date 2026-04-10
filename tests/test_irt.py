@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import torch
 
+from engine.classical_scoring import ClassicalBigFiveScorer
 from engine.irt_model import AdaptiveMMPIRouter
 from engine.math_utils import (
     grm_category_probabilities,
@@ -19,6 +20,15 @@ def test_likert_to_binary_rules() -> None:
     assert likert_to_binary(4) == 1.0
     assert likert_to_binary(5) == 1.0
     assert likert_to_binary(3, neutral_policy="zero") == 0.5
+
+
+def test_classical_big_five_reverse_key_scoring() -> None:
+    scorer = ClassicalBigFiveScorer()
+
+    assert scorer.keyed_score(5, 1) == 5
+    assert scorer.keyed_score(5, -1) == 1
+    assert scorer.centered_score(5.0) == 1.0
+    assert scorer.tendency_t_score(1.0) == 60.0
 
 
 def test_router_loads_item_and_parameter_shapes() -> None:
@@ -124,3 +134,4 @@ def test_simulation_matrix_runs_both_scoring_models() -> None:
     assert {session["scoring_model"] for session in sessions} == {"binary_2pl", "grm"}
     assert all(session["answered_count"] == 3 for session in sessions)
     assert all(len(session["path"]) == 3 for session in sessions)
+    assert all("classical_big5" in session for session in sessions)
