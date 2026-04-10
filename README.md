@@ -62,6 +62,20 @@ Run a small simulation comparing both engine paths:
 conda run -n IPIP python scripts\simulate_adaptive_sessions.py --max-items 12
 ```
 
+Run a manual terminal assessment:
+
+```powershell
+conda run -n IPIP python scripts\run_cli_assessment.py --model binary_2pl --max-items 12
+```
+
+The CLI prints an ASCII-safe disclaimer for Windows `conda run` compatibility; JSON output keeps the original Chinese disclaimer.
+
+Run the CLI in non-interactive demo mode:
+
+```powershell
+conda run -n IPIP python scripts\run_cli_assessment.py --demo-responses 5,4,3,2,1 --max-items 5
+```
+
 ## Ethics Notice
 
 This project uses open IPIP data for MVP development. It must not scrape, copy, reconstruct, or reverse-engineer protected MMPI items, proprietary norm tables, or protected clinical scoring mechanisms.

@@ -11,6 +11,7 @@ from engine.math_utils import (
     mirt_2pl_probability,
 )
 from scripts.simulate_adaptive_sessions import PERSONAS, run_matrix
+from scripts.run_cli_assessment import parse_demo_responses, run_assessment
 
 
 def test_likert_to_binary_rules() -> None:
@@ -135,3 +136,17 @@ def test_simulation_matrix_runs_both_scoring_models() -> None:
     assert all(session["answered_count"] == 3 for session in sessions)
     assert all(len(session["path"]) == 3 for session in sessions)
     assert all("classical_big5" in session for session in sessions)
+
+
+def test_cli_assessment_demo_mode_runs_without_input() -> None:
+    result = run_assessment(
+        scoring_model="binary_2pl",
+        max_items=3,
+        device="cpu",
+        demo_responses=parse_demo_responses("5,4,3"),
+    )
+
+    assert result["answered_count"] == 3
+    assert len(result["path"]) == 3
+    assert "irt_t_scores" in result
+    assert "classical_big5" in result

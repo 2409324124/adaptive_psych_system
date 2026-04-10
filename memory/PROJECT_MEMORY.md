@@ -1,6 +1,6 @@
 # Adaptive Psych System Project Memory
 
-Last updated: 2026-04-10 20:31 Asia/Taipei
+Last updated: 2026-04-10 20:43 Asia/Taipei
 
 ## Project Goal
 
@@ -52,6 +52,7 @@ adaptive_psych_system/
 |   +-- ARCHITECTURE_HANDOFF.md
 +-- scripts/
 |   +-- prepare_ipip_data.py
+|   +-- run_cli_assessment.py
 |   +-- simulate_adaptive_sessions.py
 +-- tests/
 |   +-- test_irt.py
@@ -227,6 +228,7 @@ Completed:
 - Added `ClassicalBigFiveScorer`, a traditional IPIP-style baseline that reverse-keys Likert items and averages per trait.
 - Added IRT engine tests and `pytest.ini`.
 - Added `scripts/simulate_adaptive_sessions.py` to compare `binary_2pl`, `grm`, and classical Big Five outputs on fixed simulated personas.
+- Added `scripts/run_cli_assessment.py`, a manual terminal assessment demo with disclaimer, 1-5 input, IRT scores, classical Big Five comparison, and optional JSON output.
 
 Implemented engine modules:
 
@@ -281,12 +283,17 @@ System outputs should be framed as tendency scores or auxiliary screening result
    - `classical_big5` provides an interpretable IPIP-style baseline on the routed item subset.
    - Decide whether UI default should stay `binary_2pl` until calibrated GRM thresholds exist.
 
-2. Implement `llm/ollama_client.py`:
+2. Manually try the CLI and tune the first-screen experience:
+   - `conda run -n IPIP python scripts\run_cli_assessment.py --model binary_2pl --max-items 12`
+   - Check whether selected item order feels coherent.
+   - Check whether score movement is too aggressive.
+
+3. Implement `llm/ollama_client.py`:
    - Simple `requests` wrapper for local Ollama.
    - JSON parsing for trait-weight interpretation.
    - Graceful fallback when Ollama is not running.
 
-3. Implement Tkinter MVP:
+4. Implement Tkinter MVP:
    - Chat bubbles.
    - Option buttons for Likert responses.
    - Optional free-text input.
@@ -322,6 +329,12 @@ Run adaptive-routing simulation:
 
 ```powershell
 conda run -n IPIP python scripts\simulate_adaptive_sessions.py --max-items 12
+```
+
+Run manual CLI assessment:
+
+```powershell
+conda run -n IPIP python scripts\run_cli_assessment.py --model binary_2pl --max-items 12
 ```
 
 Recreate environment from file:
