@@ -55,6 +55,12 @@ Smoke test:
 conda run -n IPIP pytest -q
 ```
 
+Run a small simulation comparing both engine paths:
+
+```powershell
+conda run -n IPIP python scripts\simulate_adaptive_sessions.py --max-items 12
+```
+
 ## Ethics Notice
 
 This project uses open IPIP data for MVP development. It must not scrape, copy, reconstruct, or reverse-engineer protected MMPI items, proprietary norm tables, or protected clinical scoring mechanisms.

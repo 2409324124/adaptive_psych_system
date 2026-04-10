@@ -9,6 +9,7 @@ from engine.math_utils import (
     likert_to_binary,
     mirt_2pl_probability,
 )
+from scripts.simulate_adaptive_sessions import PERSONAS, run_matrix
 
 
 def test_likert_to_binary_rules() -> None:
@@ -109,3 +110,17 @@ def test_router_can_use_cuda_when_available() -> None:
     router.answer_item(str(item["id"]), 4)
 
     assert router.theta.device.type == "cuda"
+
+
+def test_simulation_matrix_runs_both_scoring_models() -> None:
+    sessions = run_matrix(
+        personas=PERSONAS[:1],
+        scoring_models=["binary_2pl", "grm"],
+        max_items=3,
+        device="cpu",
+    )
+
+    assert len(sessions) == 2
+    assert {session["scoring_model"] for session in sessions} == {"binary_2pl", "grm"}
+    assert all(session["answered_count"] == 3 for session in sessions)
+    assert all(len(session["path"]) == 3 for session in sessions)

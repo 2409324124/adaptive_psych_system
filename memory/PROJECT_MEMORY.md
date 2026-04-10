@@ -1,6 +1,6 @@
 # Adaptive Psych System Project Memory
 
-Last updated: 2026-04-10 20:08 Asia/Taipei
+Last updated: 2026-04-10 20:20 Asia/Taipei
 
 ## Project Goal
 
@@ -51,6 +51,7 @@ adaptive_psych_system/
 |   +-- ARCHITECTURE_HANDOFF.md
 +-- scripts/
 |   +-- prepare_ipip_data.py
+|   +-- simulate_adaptive_sessions.py
 +-- tests/
 |   +-- test_irt.py
 |   +-- test_llm.py
@@ -223,6 +224,7 @@ Completed:
 - Implemented the first adaptive routing engine in `engine/`.
 - Added both `binary_2pl` and experimental `grm` scoring modes.
 - Added IRT engine tests and `pytest.ini`.
+- Added `scripts/simulate_adaptive_sessions.py` to compare `binary_2pl` and `grm` on fixed simulated personas.
 
 Implemented engine modules:
 
@@ -270,10 +272,10 @@ System outputs should be framed as tendency scores or auxiliary screening result
 
 ## Next Development Steps
 
-1. Compare `binary_2pl` and `grm` behavior on simulated response sessions:
-   - Check theta movement stability.
-   - Check selected item diversity.
-   - Decide which mode becomes UI default.
+1. Use simulation output to tune model defaults:
+   - `binary_2pl` currently moves theta more aggressively.
+   - `grm` currently moves theta more conservatively because thresholds are derived from mock `b`.
+   - Decide whether UI default should stay `binary_2pl` until calibrated GRM thresholds exist.
 
 2. Implement `llm/ollama_client.py`:
    - Simple `requests` wrapper for local Ollama.
@@ -310,6 +312,12 @@ Regenerate IPIP normalized data:
 
 ```powershell
 conda run -n IPIP python scripts\prepare_ipip_data.py
+```
+
+Run adaptive-routing simulation:
+
+```powershell
+conda run -n IPIP python scripts\simulate_adaptive_sessions.py --max-items 12
 ```
 
 Recreate environment from file:
