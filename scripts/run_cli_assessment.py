@@ -38,7 +38,10 @@ def parse_demo_responses(value: str | None) -> list[int] | None:
 
 def ask_likert(prompt: str) -> int:
     while True:
-        raw = input(prompt).strip()
+        try:
+            raw = input(prompt).strip()
+        except EOFError as exc:
+            raise KeyboardInterrupt from exc
         if raw in {"q", "quit", "exit"}:
             raise KeyboardInterrupt
         try:
