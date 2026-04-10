@@ -1,6 +1,6 @@
 # Adaptive Psych System Project Memory
 
-Last updated: 2026-04-10 19:53 Asia/Taipei
+Last updated: 2026-04-10 20:08 Asia/Taipei
 
 ## Project Goal
 
@@ -220,11 +220,17 @@ Completed:
 - Pulled official IPIP raw item files into `data/raw/`.
 - Added `scripts/prepare_ipip_data.py` to normalize official IPIP HTML/XLSX files.
 - Generated full 3,320-item IPIP JSON/CSV files and 3,805-row assignment table JSON/CSV files.
+- Implemented the first adaptive routing engine in `engine/`.
+- Added both `binary_2pl` and experimental `grm` scoring modes.
+- Added IRT engine tests and `pytest.ini`.
 
-Not implemented yet:
+Implemented engine modules:
 
 - `engine/math_utils.py`
 - `engine/irt_model.py`
+
+Not implemented yet:
+
 - `llm/ollama_client.py`
 - `llm/prompt_templates.py`
 - `ui/components.py`
@@ -264,31 +270,17 @@ System outputs should be framed as tendency scores or auxiliary screening result
 
 ## Next Development Steps
 
-1. Implement `engine/math_utils.py`:
-   - Logistic sigmoid utilities.
-   - Multidimensional 2PL probability calculation.
-   - Fisher information approximation.
-   - Simple theta update helper.
+1. Compare `binary_2pl` and `grm` behavior on simulated response sessions:
+   - Check theta movement stability.
+   - Check selected item diversity.
+   - Decide which mode becomes UI default.
 
-2. Implement `engine/irt_model.py`:
-   - `AdaptiveMMPIRouter` class.
-   - Load IPIP item metadata and mock tensors.
-   - Track answered item IDs.
-   - Select next item by expected information.
-   - Update theta from Likert responses.
-
-3. Add tests in `tests/test_irt.py`:
-   - Tensor shape validation.
-   - Probability range validation.
-   - Next-item selection excludes answered items.
-   - GPU/CPU device fallback smoke test.
-
-4. Implement `llm/ollama_client.py`:
+2. Implement `llm/ollama_client.py`:
    - Simple `requests` wrapper for local Ollama.
    - JSON parsing for trait-weight interpretation.
    - Graceful fallback when Ollama is not running.
 
-5. Implement Tkinter MVP:
+3. Implement Tkinter MVP:
    - Chat bubbles.
    - Option buttons for Likert responses.
    - Optional free-text input.
@@ -306,6 +298,12 @@ Run a GPU smoke test:
 
 ```powershell
 conda run -n IPIP python -c "import torch; print(torch.cuda.is_available()); print(torch.cuda.get_device_name(0))"
+```
+
+Run tests:
+
+```powershell
+conda run -n IPIP pytest -q
 ```
 
 Regenerate IPIP normalized data:

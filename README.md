@@ -42,6 +42,19 @@ Generated outputs:
 - `data/ipip_item_assignment_table.json`
 - `data/ipip_item_assignment_table.csv`
 
+## Adaptive Engine
+
+The first engine pass supports two scoring modes:
+
+- `binary_2pl`: stable MVP path that maps Likert 1-2 to 0, 4-5 to 1, and skips theta updates for neutral 3.
+- `grm`: experimental graded response path that derives four ordered thresholds from the current mock `b` parameter at runtime.
+
+Smoke test:
+
+```powershell
+conda run -n IPIP pytest -q
+```
+
 ## Ethics Notice
 
 This project uses open IPIP data for MVP development. It must not scrape, copy, reconstruct, or reverse-engineer protected MMPI items, proprietary norm tables, or protected clinical scoring mechanisms.
