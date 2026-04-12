@@ -1,0 +1,170 @@
+[
+  {
+    "config": "coverage=2,se=0.85",
+    "coverage_min_per_dimension": 2,
+    "stop_mean_standard_error": 0.85,
+    "average_answered": 14.75,
+    "sessions": [
+      {
+        "persona": "balanced",
+        "answered_count": 15,
+        "mean_standard_error": 0.8382983207702637,
+        "dimension_answer_counts": {
+          "extraversion": 3,
+          "agreeableness": 2,
+          "conscientiousness": 2,
+          "emotional_stability": 4,
+          "intellect": 4
+        }
+      },
+      {
+        "persona": "social_builder",
+        "answered_count": 15,
+        "mean_standard_error": 0.8424625396728516,
+        "dimension_answer_counts": {
+          "extraversion": 2,
+          "agreeableness": 2,
+          "conscientiousness": 3,
+          "emotional_stability": 4,
+          "intellect": 4
+        }
+      },
+      {
+        "persona": "focused_introvert",
+        "answered_count": 15,
+        "mean_standard_error": 0.8432542085647583,
+        "dimension_answer_counts": {
+          "extraversion": 3,
+          "agreeableness": 2,
+          "conscientiousness": 2,
+          "emotional_stability": 4,
+          "intellect": 4
+        }
+      },
+      {
+        "persona": "stressed_explorer",
+        "answered_count": 14,
+        "mean_standard_error": 0.8485394716262817,
+        "dimension_answer_counts": {
+          "extraversion": 3,
+          "agreeableness": 3,
+          "conscientiousness": 2,
+          "emotional_stability": 3,
+          "intellect": 3
+        }
+      }
+    ]
+  },
+  {
+    "config": "coverage=2,se=0.65",
+    "coverage_min_per_dimension": 2,
+    "stop_mean_standard_error": 0.65,
+    "average_answered": 26.5,
+    "sessions": [
+      {
+        "persona": "balanced",
+        "answered_count": 26,
+        "mean_standard_error": 0.6448830366134644,
+        "dimension_answer_counts": {
+          "extraversion": 3,
+          "agreeableness": 5,
+          "conscientiousness": 7,
+          "emotional_stability": 6,
+          "intellect": 5
+        }
+      },
+      {
+        "persona": "social_builder",
+        "answered_count": 27,
+        "mean_standard_error": 0.6441965103149414,
+        "dimension_answer_counts": {
+          "extraversion": 6,
+          "agreeableness": 3,
+          "conscientiousness": 7,
+          "emotional_stability": 5,
+          "intellect": 6
+        }
+      },
+      {
+        "persona": "focused_introvert",
+        "answered_count": 27,
+        "mean_standard_error": 0.6457439661026001,
+        "dimension_answer_counts": {
+          "extraversion": 5,
+          "agreeableness": 5,
+          "conscientiousness": 4,
+          "emotional_stability": 7,
+          "intellect": 6
+        }
+      },
+      {
+        "persona": "stressed_explorer",
+        "answered_count": 26,
+        "mean_standard_error": 0.6481348276138306,
+        "dimension_answer_counts": {
+          "extraversion": 4,
+          "agreeableness": 7,
+          "conscientiousness": 7,
+          "emotional_stability": 4,
+          "intellect": 4
+        }
+      }
+    ]
+  },
+  {
+    "config": "coverage=3,se=0.65",
+    "coverage_min_per_dimension": 3,
+    "stop_mean_standard_error": 0.65,
+    "average_answered": 26.5,
+    "sessions": [
+      {
+        "persona": "balanced",
+        "answered_count": 26,
+        "mean_standard_error": 0.6449213027954102,
+        "dimension_answer_counts": {
+          "extraversion": 3,
+          "agreeableness": 5,
+          "conscientiousness": 7,
+          "emotional_stability": 6,
+          "intellect": 5
+        }
+      },
+      {
+        "persona": "social_builder",
+        "answered_count": 27,
+        "mean_standard_error": 0.643349289894104,
+        "dimension_answer_counts": {
+          "extraversion": 6,
+          "agreeableness": 3,
+          "conscientiousness": 7,
+          "emotional_stability": 5,
+          "intellect": 6
+        }
+      },
+      {
+        "persona": "focused_introvert",
+        "answered_count": 27,
+        "mean_standard_error": 0.6458486914634705,
+        "dimension_answer_counts": {
+          "extraversion": 5,
+          "agreeableness": 5,
+          "conscientiousness": 4,
+          "emotional_stability": 7,
+          "intellect": 6
+        }
+      },
+      {
+        "persona": "stressed_explorer",
+        "answered_count": 26,
+        "mean_standard_error": 0.6481484174728394,
+        "dimension_answer_counts": {
+          "extraversion": 4,
+          "agreeableness": 7,
+          "conscientiousness": 7,
+          "emotional_stability": 4,
+          "intellect": 4
+        }
+      }
+    ]
+  }
+]

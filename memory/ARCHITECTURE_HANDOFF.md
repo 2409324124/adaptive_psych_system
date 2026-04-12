@@ -1,6 +1,6 @@
 # CAT-Psych Architecture Handoff
 
-Last updated: 2026-04-10 Asia/Taipei
+Last updated: 2026-04-12 15:20 Asia/Taipei
 
 ## 1. Project Vision And Positioning
 
@@ -92,6 +92,11 @@ These constraints are mandatory and should be treated as project-level safety re
 - Use random or mock PyTorch tensors for item parameters during engine integration.
 - Current mock parameter target can be small, such as `(50, 5)` or expanded later to `(120, 5)`.
 - Keep `mock_params.pt` clearly labeled as mock/non-clinical data.
+- A newer `mock_params_keyed.pt` now exists with `metadata.key_aligned=True`; runtime logic must not also flip reverse-keyed responses in that mode.
+- Current project policy is dual-track:
+  - `legacy` mode keeps `mock_params.pt` as the compatibility baseline.
+  - `keyed` mode uses `mock_params_keyed.pt` as the more realistic experimental baseline.
+  - Do not silently switch defaults until benchmark and UI comparison surfaces are stable.
 
 ### Medical And Psychological Disclaimer
 
@@ -103,6 +108,11 @@ The UI must visibly hard-code this disclaimer:
 
 System outputs should be framed as tendency scores or auxiliary screening results, not clinical diagnoses.
 
+Practical note for future agents:
+
+- If Chinese disclaimer text looks garbled in a Windows terminal readout, do not assume the stored file is corrupted.
+- The user has already verified that GitHub/browser rendering is correct; treat terminal mojibake as an environment display issue unless independently reproduced in the actual app or repository view.
+
 ## 4. Current MVP Direction
 
 Short-term MVP target:
@@ -111,7 +121,17 @@ Short-term MVP target:
 - Use MIRT/2PL-inspired adaptive item routing.
 - Use CUDA when available and CPU fallback otherwise.
 - Use local Ollama as optional semantic augmentation.
-- Build a Tkinter chat interface with clear disclaimer.
+- Maintain the current FastAPI + Web MVP, including session persistence/export and rules-based result interpretation, while keeping Tkinter as a later desktop branch.
+- Preserve the current confidence-aware stopping flow:
+  - minimum item count,
+  - dimension coverage floor,
+  - accumulated Fisher information,
+  - mean standard error threshold,
+  - and visible confidence reporting in the Web UI.
+- Preserve experiment traceability:
+  - result/export payloads should carry parameter mode and parameter metadata,
+  - benchmark and simulation outputs should carry script version and timestamp,
+  - stop-rule reasoning should remain visible in API/Web results.
 
 Long-term direction:
 

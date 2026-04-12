@@ -1,0 +1,1778 @@
+[
+  {
+    "persona": "balanced",
+    "scoring_model": "binary_2pl",
+    "max_items": 12,
+    "answered_count": 12,
+    "trait_estimates": {
+      "extraversion": 0.007602287456393242,
+      "agreeableness": 0.1933252215385437,
+      "conscientiousness": 0.23105037212371826,
+      "emotional_stability": -0.23566384613513947,
+      "intellect": 0.0013091336004436016
+    },
+    "tendency_t_scores": {
+      "extraversion": 50.07602310180664,
+      "agreeableness": 51.933250427246094,
+      "conscientiousness": 52.31050491333008,
+      "emotional_stability": 47.64336013793945,
+      "intellect": 50.013092041015625
+    },
+    "classical_big5": {
+      "extraversion": {
+        "answered_count": 2,
+        "raw_mean": 3.0,
+        "centered_score": 0.0,
+        "tendency_t_score": 50.0
+      },
+      "agreeableness": {
+        "answered_count": 4,
+        "raw_mean": 2.75,
+        "centered_score": -0.125,
+        "tendency_t_score": 48.75
+      },
+      "conscientiousness": {
+        "answered_count": 2,
+        "raw_mean": 3.5,
+        "centered_score": 0.25,
+        "tendency_t_score": 52.5
+      },
+      "emotional_stability": {
+        "answered_count": 2,
+        "raw_mean": 2.5,
+        "centered_score": -0.25,
+        "tendency_t_score": 47.5
+      },
+      "intellect": {
+        "answered_count": 2,
+        "raw_mean": 3.0,
+        "centered_score": 0.0,
+        "tendency_t_score": 50.0
+      }
+    },
+    "path": [
+      {
+        "step": 1,
+        "item_id": "IPIP50_I_003",
+        "dimension": "intellect",
+        "key": 1,
+        "response": 3,
+        "theta_after": [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ]
+      },
+      {
+        "step": 2,
+        "item_id": "IPIP50_I_007",
+        "dimension": "intellect",
+        "key": 1,
+        "response": 3,
+        "theta_after": [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ]
+      },
+      {
+        "step": 3,
+        "item_id": "IPIP50_C_006",
+        "dimension": "conscientiousness",
+        "key": 1,
+        "response": 4,
+        "theta_after": [
+          0.005214403849095106,
+          -0.006537390407174826,
+          0.23538528382778168,
+          -0.0032701161690056324,
+          -0.0019855124410241842
+        ]
+      },
+      {
+        "step": 4,
+        "item_id": "IPIP50_A_007",
+        "dimension": "agreeableness",
+        "key": -1,
+        "response": 4,
+        "theta_after": [
+          0.005010428838431835,
+          0.23456771671772003,
+          0.23357917368412018,
+          -0.002651291899383068,
+          -0.0013461021007969975
+        ]
+      },
+      {
+        "step": 5,
+        "item_id": "IPIP50_A_003",
+        "dimension": "agreeableness",
+        "key": 1,
+        "response": 2,
+        "theta_after": [
+          0.006263498216867447,
+          -0.02274070680141449,
+          0.23148588836193085,
+          -0.008149486035108566,
+          -0.0001631451305001974
+        ]
+      },
+      {
+        "step": 6,
+        "item_id": "IPIP50_E_001",
+        "dimension": "extraversion",
+        "key": 1,
+        "response": 3,
+        "theta_after": [
+          0.006263498216867447,
+          -0.02274070680141449,
+          0.23148588836193085,
+          -0.008149486035108566,
+          -0.0001631451305001974
+        ]
+      },
+      {
+        "step": 7,
+        "item_id": "IPIP50_E_006",
+        "dimension": "extraversion",
+        "key": -1,
+        "response": 3,
+        "theta_after": [
+          0.006263498216867447,
+          -0.02274070680141449,
+          0.23148588836193085,
+          -0.008149486035108566,
+          -0.0001631451305001974
+        ]
+      },
+      {
+        "step": 8,
+        "item_id": "IPIP50_ES_001",
+        "dimension": "emotional_stability",
+        "key": 1,
+        "response": 3,
+        "theta_after": [
+          0.006263498216867447,
+          -0.02274070680141449,
+          0.23148588836193085,
+          -0.008149486035108566,
+          -0.0001631451305001974
+        ]
+      },
+      {
+        "step": 9,
+        "item_id": "IPIP50_ES_002",
+        "dimension": "emotional_stability",
+        "key": 1,
+        "response": 2,
+        "theta_after": [
+          0.009184854105114937,
+          -0.020193876698613167,
+          0.23407751321792603,
+          -0.23587371408939362,
+          -0.0031054606661200523
+        ]
+      },
+      {
+        "step": 10,
+        "item_id": "IPIP50_C_003",
+        "dimension": "conscientiousness",
+        "key": 1,
+        "response": 3,
+        "theta_after": [
+          0.009184854105114937,
+          -0.020193876698613167,
+          0.23407751321792603,
+          -0.23587371408939362,
+          -0.0031054606661200523
+        ]
+      },
+      {
+        "step": 11,
+        "item_id": "IPIP50_A_008",
+        "dimension": "agreeableness",
+        "key": -1,
+        "response": 3,
+        "theta_after": [
+          0.009184854105114937,
+          -0.020193876698613167,
+          0.23407751321792603,
+          -0.23587371408939362,
+          -0.0031054606661200523
+        ]
+      },
+      {
+        "step": 12,
+        "item_id": "IPIP50_A_004",
+        "dimension": "agreeableness",
+        "key": 1,
+        "response": 4,
+        "theta_after": [
+          0.007602287456393242,
+          0.1933252215385437,
+          0.23105037212371826,
+          -0.23566384613513947,
+          0.0013091336004436016
+        ]
+      }
+    ]
+  },
+  {
+    "persona": "balanced",
+    "scoring_model": "grm",
+    "max_items": 12,
+    "answered_count": 12,
+    "trait_estimates": {
+      "extraversion": -0.0035801101475954056,
+      "agreeableness": 0.011064687743782997,
+      "conscientiousness": -0.045418351888656616,
+      "emotional_stability": -0.03868101164698601,
+      "intellect": 0.03302159160375595
+    },
+    "tendency_t_scores": {
+      "extraversion": 49.96419906616211,
+      "agreeableness": 50.11064529418945,
+      "conscientiousness": 49.54581832885742,
+      "emotional_stability": 49.613189697265625,
+      "intellect": 50.33021545410156
+    },
+    "classical_big5": {
+      "extraversion": {
+        "answered_count": 2,
+        "raw_mean": 3.0,
+        "centered_score": 0.0,
+        "tendency_t_score": 50.0
+      },
+      "agreeableness": {
+        "answered_count": 4,
+        "raw_mean": 2.75,
+        "centered_score": -0.125,
+        "tendency_t_score": 48.75
+      },
+      "conscientiousness": {
+        "answered_count": 2,
+        "raw_mean": 4.0,
+        "centered_score": 0.5,
+        "tendency_t_score": 55.0
+      },
+      "emotional_stability": {
+        "answered_count": 2,
+        "raw_mean": 2.5,
+        "centered_score": -0.25,
+        "tendency_t_score": 47.5
+      },
+      "intellect": {
+        "answered_count": 2,
+        "raw_mean": 3.0,
+        "centered_score": 0.0,
+        "tendency_t_score": 50.0
+      }
+    },
+    "path": [
+      {
+        "step": 1,
+        "item_id": "IPIP50_I_003",
+        "dimension": "intellect",
+        "key": 1,
+        "response": 3,
+        "theta_after": [
+          -0.00017736262816470116,
+          0.00047072689631022513,
+          -0.0007354944827966392,
+          0.00015796709340065718,
+          0.02570471167564392
+        ]
+      },
+      {
+        "step": 2,
+        "item_id": "IPIP50_I_007",
+        "dimension": "intellect",
+        "key": 1,
+        "response": 3,
+        "theta_after": [
+          2.12694430956617e-05,
+          0.0005127539625391364,
+          -0.000618554709944874,
+          0.00012555255671031773,
+          0.032236211001873016
+        ]
+      },
+      {
+        "step": 3,
+        "item_id": "IPIP50_C_006",
+        "dimension": "conscientiousness",
+        "key": 1,
+        "response": 4,
+        "theta_after": [
+          1.1512443961692043e-05,
+          0.0005249864771030843,
+          -0.0010589989833533764,
+          0.00013167147699277848,
+          0.03223992511630058
+        ]
+      },
+      {
+        "step": 4,
+        "item_id": "IPIP50_A_007",
+        "dimension": "agreeableness",
+        "key": -1,
+        "response": 4,
+        "theta_after": [
+          1.0468500477145426e-05,
+          0.0017589619383215904,
+          -0.0010682427091524005,
+          0.00013483861403074116,
+          0.03224319592118263
+        ]
+      },
+      {
+        "step": 5,
+        "item_id": "IPIP50_A_003",
+        "dimension": "agreeableness",
+        "key": 1,
+        "response": 2,
+        "theta_after": [
+          -0.00018702883971855044,
+          0.042313557118177414,
+          -0.000738317146897316,
+          0.001001413562335074,
+          0.03205674886703491
+        ]
+      },
+      {
+        "step": 6,
+        "item_id": "IPIP50_E_001",
+        "dimension": "extraversion",
+        "key": 1,
+        "response": 3,
+        "theta_after": [
+          0.020357858389616013,
+          0.04208163917064667,
+          -0.0003875838592648506,
+          0.0008289263350889087,
+          0.032031673938035965
+        ]
+      },
+      {
+        "step": 7,
+        "item_id": "IPIP50_ES_002",
+        "dimension": "emotional_stability",
+        "key": 1,
+        "response": 2,
+        "theta_after": [
+          0.020448822528123856,
+          0.042160939425230026,
+          -0.00030688720289617777,
+          -0.006261838134378195,
+          0.03194005787372589
+        ]
+      },
+      {
+        "step": 8,
+        "item_id": "IPIP50_E_006",
+        "dimension": "extraversion",
+        "key": -1,
+        "response": 3,
+        "theta_after": [
+          -0.0029178429394960403,
+          0.042286746203899384,
+          -0.000525628391187638,
+          -0.006617420818656683,
+          0.0325930118560791
+        ]
+      },
+      {
+        "step": 9,
+        "item_id": "IPIP50_ES_001",
+        "dimension": "emotional_stability",
+        "key": 1,
+        "response": 3,
+        "theta_after": [
+          -0.003024405799806118,
+          0.04249526560306549,
+          -0.0005042887642048299,
+          -0.0379464216530323,
+          0.03291759639978409
+        ]
+      },
+      {
+        "step": 10,
+        "item_id": "IPIP50_C_001",
+        "dimension": "conscientiousness",
+        "key": 1,
+        "response": 4,
+        "theta_after": [
+          -0.003641843795776367,
+          0.041942231357097626,
+          -0.04544999822974205,
+          -0.0387648344039917,
+          0.03329874575138092
+        ]
+      },
+      {
+        "step": 11,
+        "item_id": "IPIP50_A_009",
+        "dimension": "agreeableness",
+        "key": -1,
+        "response": 2,
+        "theta_after": [
+          -0.003651243867352605,
+          0.032407332211732864,
+          -0.04566643387079239,
+          -0.03873833268880844,
+          0.03298400342464447
+        ]
+      },
+      {
+        "step": 12,
+        "item_id": "IPIP50_A_008",
+        "dimension": "agreeableness",
+        "key": -1,
+        "response": 3,
+        "theta_after": [
+          -0.0035801101475954056,
+          0.011064687743782997,
+          -0.045418351888656616,
+          -0.03868101164698601,
+          0.03302159160375595
+        ]
+      }
+    ]
+  },
+  {
+    "persona": "social_builder",
+    "scoring_model": "binary_2pl",
+    "max_items": 12,
+    "answered_count": 12,
+    "trait_estimates": {
+      "extraversion": 0.7647829651832581,
+      "agreeableness": 0.9886023998260498,
+      "conscientiousness": 0.47004008293151855,
+      "emotional_stability": 0.04117461293935776,
+      "intellect": -0.009154284372925758
+    },
+    "tendency_t_scores": {
+      "extraversion": 57.647830963134766,
+      "agreeableness": 59.886024475097656,
+      "conscientiousness": 54.700401306152344,
+      "emotional_stability": 50.411746978759766,
+      "intellect": 49.9084587097168
+    },
+    "classical_big5": {
+      "extraversion": {
+        "answered_count": 2,
+        "raw_mean": 4.5,
+        "centered_score": 0.75,
+        "tendency_t_score": 57.5
+      },
+      "agreeableness": {
+        "answered_count": 3,
+        "raw_mean": 2.3333333333333335,
+        "centered_score": -0.33333333333333326,
+        "tendency_t_score": 46.666666666666664
+      },
+      "conscientiousness": {
+        "answered_count": 2,
+        "raw_mean": 4.0,
+        "centered_score": 0.5,
+        "tendency_t_score": 55.0
+      },
+      "emotional_stability": {
+        "answered_count": 3,
+        "raw_mean": 3.6666666666666665,
+        "centered_score": 0.33333333333333326,
+        "tendency_t_score": 53.333333333333336
+      },
+      "intellect": {
+        "answered_count": 2,
+        "raw_mean": 3.0,
+        "centered_score": 0.0,
+        "tendency_t_score": 50.0
+      }
+    },
+    "path": [
+      {
+        "step": 1,
+        "item_id": "IPIP50_I_003",
+        "dimension": "intellect",
+        "key": 1,
+        "response": 3,
+        "theta_after": [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ]
+      },
+      {
+        "step": 2,
+        "item_id": "IPIP50_I_007",
+        "dimension": "intellect",
+        "key": 1,
+        "response": 3,
+        "theta_after": [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ]
+      },
+      {
+        "step": 3,
+        "item_id": "IPIP50_C_006",
+        "dimension": "conscientiousness",
+        "key": 1,
+        "response": 4,
+        "theta_after": [
+          0.005214403849095106,
+          -0.006537390407174826,
+          0.23538528382778168,
+          -0.0032701161690056324,
+          -0.0019855124410241842
+        ]
+      },
+      {
+        "step": 4,
+        "item_id": "IPIP50_A_007",
+        "dimension": "agreeableness",
+        "key": -1,
+        "response": 5,
+        "theta_after": [
+          0.005010428838431835,
+          0.23456771671772003,
+          0.23357917368412018,
+          -0.002651291899383068,
+          -0.0013461021007969975
+        ]
+      },
+      {
+        "step": 5,
+        "item_id": "IPIP50_A_003",
+        "dimension": "agreeableness",
+        "key": 1,
+        "response": 4,
+        "theta_after": [
+          0.0023892251774668694,
+          0.7728122472763062,
+          0.23795798420906067,
+          0.00884997472167015,
+          -0.003820642828941345
+        ]
+      },
+      {
+        "step": 6,
+        "item_id": "IPIP50_E_001",
+        "dimension": "extraversion",
+        "key": 1,
+        "response": 5,
+        "theta_after": [
+          0.39514636993408203,
+          0.7683786749839783,
+          0.24466295540332794,
+          0.005552531220018864,
+          -0.004299992695450783
+        ]
+      },
+      {
+        "step": 7,
+        "item_id": "IPIP50_E_004",
+        "dimension": "extraversion",
+        "key": 1,
+        "response": 4,
+        "theta_after": [
+          0.7646359205245972,
+          0.7766648530960083,
+          0.2316513955593109,
+          0.008677192963659763,
+          -0.015069118700921535
+        ]
+      },
+      {
+        "step": 8,
+        "item_id": "IPIP50_ES_001",
+        "dimension": "emotional_stability",
+        "key": 1,
+        "response": 4,
+        "theta_after": [
+          0.7655261754989624,
+          0.7749228477478027,
+          0.23147311806678772,
+          0.27040743827819824,
+          -0.01778077520430088
+        ]
+      },
+      {
+        "step": 9,
+        "item_id": "IPIP50_ES_002",
+        "dimension": "emotional_stability",
+        "key": 1,
+        "response": 3,
+        "theta_after": [
+          0.7655261754989624,
+          0.7749228477478027,
+          0.23147311806678772,
+          0.27040743827819824,
+          -0.01778077520430088
+        ]
+      },
+      {
+        "step": 10,
+        "item_id": "IPIP50_C_003",
+        "dimension": "conscientiousness",
+        "key": 1,
+        "response": 4,
+        "theta_after": [
+          0.7671850919723511,
+          0.7732696533203125,
+          0.4640340507030487,
+          0.27833476662635803,
+          -0.018219919875264168
+        ]
+      },
+      {
+        "step": 11,
+        "item_id": "IPIP50_ES_005",
+        "dimension": "emotional_stability",
+        "key": -1,
+        "response": 2,
+        "theta_after": [
+          0.7645695805549622,
+          0.7721390128135681,
+          0.46512651443481445,
+          0.041776299476623535,
+          -0.016299592331051826
+        ]
+      },
+      {
+        "step": 12,
+        "item_id": "IPIP50_A_009",
+        "dimension": "agreeableness",
+        "key": -1,
+        "response": 4,
+        "theta_after": [
+          0.7647829651832581,
+          0.9886023998260498,
+          0.47004008293151855,
+          0.04117461293935776,
+          -0.009154284372925758
+        ]
+      }
+    ]
+  },
+  {
+    "persona": "social_builder",
+    "scoring_model": "grm",
+    "max_items": 12,
+    "answered_count": 12,
+    "trait_estimates": {
+      "extraversion": 0.3169012665748596,
+      "agreeableness": 0.3140486776828766,
+      "conscientiousness": 0.0758976861834526,
+      "emotional_stability": 0.07707566022872925,
+      "intellect": 0.028864169493317604
+    },
+    "tendency_t_scores": {
+      "extraversion": 53.16901397705078,
+      "agreeableness": 53.14048767089844,
+      "conscientiousness": 50.758975982666016,
+      "emotional_stability": 50.770755767822266,
+      "intellect": 50.28864288330078
+    },
+    "classical_big5": {
+      "extraversion": {
+        "answered_count": 3,
+        "raw_mean": 3.3333333333333335,
+        "centered_score": 0.16666666666666674,
+        "tendency_t_score": 51.666666666666664
+      },
+      "agreeableness": {
+        "answered_count": 3,
+        "raw_mean": 2.3333333333333335,
+        "centered_score": -0.33333333333333326,
+        "tendency_t_score": 46.666666666666664
+      },
+      "conscientiousness": {
+        "answered_count": 2,
+        "raw_mean": 4.5,
+        "centered_score": 0.75,
+        "tendency_t_score": 57.5
+      },
+      "emotional_stability": {
+        "answered_count": 2,
+        "raw_mean": 3.5,
+        "centered_score": 0.25,
+        "tendency_t_score": 52.5
+      },
+      "intellect": {
+        "answered_count": 2,
+        "raw_mean": 3.0,
+        "centered_score": 0.0,
+        "tendency_t_score": 50.0
+      }
+    },
+    "path": [
+      {
+        "step": 1,
+        "item_id": "IPIP50_I_003",
+        "dimension": "intellect",
+        "key": 1,
+        "response": 3,
+        "theta_after": [
+          -0.00017736262816470116,
+          0.00047072689631022513,
+          -0.0007354944827966392,
+          0.00015796709340065718,
+          0.02570471167564392
+        ]
+      },
+      {
+        "step": 2,
+        "item_id": "IPIP50_I_007",
+        "dimension": "intellect",
+        "key": 1,
+        "response": 3,
+        "theta_after": [
+          2.12694430956617e-05,
+          0.0005127539625391364,
+          -0.000618554709944874,
+          0.00012555255671031773,
+          0.032236211001873016
+        ]
+      },
+      {
+        "step": 3,
+        "item_id": "IPIP50_C_006",
+        "dimension": "conscientiousness",
+        "key": 1,
+        "response": 4,
+        "theta_after": [
+          1.1512443961692043e-05,
+          0.0005249864771030843,
+          -0.0010589989833533764,
+          0.00013167147699277848,
+          0.03223992511630058
+        ]
+      },
+      {
+        "step": 4,
+        "item_id": "IPIP50_A_007",
+        "dimension": "agreeableness",
+        "key": -1,
+        "response": 5,
+        "theta_after": [
+          -7.69538528402336e-05,
+          0.10509508103132248,
+          -0.0018423310248181224,
+          0.00040006276685744524,
+          0.032517243176698685
+        ]
+      },
+      {
+        "step": 5,
+        "item_id": "IPIP50_A_003",
+        "dimension": "agreeableness",
+        "key": 1,
+        "response": 4,
+        "theta_after": [
+          -0.0007069968851283193,
+          0.2344696819782257,
+          -0.000789823941886425,
+          0.0031645535491406918,
+          0.03192245215177536
+        ]
+      },
+      {
+        "step": 6,
+        "item_id": "IPIP50_E_001",
+        "dimension": "extraversion",
+        "key": 1,
+        "response": 5,
+        "theta_after": [
+          0.127884641289711,
+          0.23301810026168823,
+          0.0014054363127797842,
+          0.0020849457941949368,
+          0.03176550939679146
+        ]
+      },
+      {
+        "step": 7,
+        "item_id": "IPIP50_ES_002",
+        "dimension": "emotional_stability",
+        "key": 1,
+        "response": 3,
+        "theta_after": [
+          0.12720701098442078,
+          0.23242734372615814,
+          0.0008042844710871577,
+          0.05490778759121895,
+          0.03244800865650177
+        ]
+      },
+      {
+        "step": 8,
+        "item_id": "IPIP50_ES_001",
+        "dimension": "emotional_stability",
+        "key": 1,
+        "response": 4,
+        "theta_after": [
+          0.12727072834968567,
+          0.23230266571044922,
+          0.0007915247115306556,
+          0.0736405998468399,
+          0.0322539284825325
+        ]
+      },
+      {
+        "step": 9,
+        "item_id": "IPIP50_E_006",
+        "dimension": "extraversion",
+        "key": -1,
+        "response": 5,
+        "theta_after": [
+          0.2291257381439209,
+          0.23175427317619324,
+          0.0017450148006901145,
+          0.07519058138132095,
+          0.029407717287540436
+        ]
+      },
+      {
+        "step": 10,
+        "item_id": "IPIP50_C_001",
+        "dimension": "conscientiousness",
+        "key": 1,
+        "response": 5,
+        "theta_after": [
+          0.23016156256198883,
+          0.23268204927444458,
+          0.07714661955833435,
+          0.07656355947256088,
+          0.028768295422196388
+        ]
+      },
+      {
+        "step": 11,
+        "item_id": "IPIP50_A_009",
+        "dimension": "agreeableness",
+        "key": -1,
+        "response": 4,
+        "theta_after": [
+          0.2302398681640625,
+          0.3121052086353302,
+          0.0789494663476944,
+          0.07634279131889343,
+          0.0313900001347065
+        ]
+      },
+      {
+        "step": 12,
+        "item_id": "IPIP50_E_004",
+        "dimension": "extraversion",
+        "key": 1,
+        "response": 4,
+        "theta_after": [
+          0.3169012665748596,
+          0.3140486776828766,
+          0.0758976861834526,
+          0.07707566022872925,
+          0.028864169493317604
+        ]
+      }
+    ]
+  },
+  {
+    "persona": "focused_introvert",
+    "scoring_model": "binary_2pl",
+    "max_items": 12,
+    "answered_count": 12,
+    "trait_estimates": {
+      "extraversion": -0.5782633423805237,
+      "agreeableness": 0.30534446239471436,
+      "conscientiousness": 0.4461953341960907,
+      "emotional_stability": 0.2558043301105499,
+      "intellect": 0.4424401819705963
+    },
+    "tendency_t_scores": {
+      "extraversion": 44.21736526489258,
+      "agreeableness": 53.053443908691406,
+      "conscientiousness": 54.461952209472656,
+      "emotional_stability": 52.55804443359375,
+      "intellect": 54.424400329589844
+    },
+    "classical_big5": {
+      "extraversion": {
+        "answered_count": 2,
+        "raw_mean": 3.0,
+        "centered_score": 0.0,
+        "tendency_t_score": 50.0
+      },
+      "agreeableness": {
+        "answered_count": 4,
+        "raw_mean": 2.25,
+        "centered_score": -0.375,
+        "tendency_t_score": 46.25
+      },
+      "conscientiousness": {
+        "answered_count": 2,
+        "raw_mean": 3.0,
+        "centered_score": 0.0,
+        "tendency_t_score": 50.0
+      },
+      "emotional_stability": {
+        "answered_count": 2,
+        "raw_mean": 3.5,
+        "centered_score": 0.25,
+        "tendency_t_score": 52.5
+      },
+      "intellect": {
+        "answered_count": 2,
+        "raw_mean": 3.5,
+        "centered_score": 0.25,
+        "tendency_t_score": 52.5
+      }
+    },
+    "path": [
+      {
+        "step": 1,
+        "item_id": "IPIP50_I_003",
+        "dimension": "intellect",
+        "key": 1,
+        "response": 4,
+        "theta_after": [
+          -0.002941068261861801,
+          0.007805702276527882,
+          -0.012196140363812447,
+          0.0026194469537585974,
+          0.42624151706695557
+        ]
+      },
+      {
+        "step": 2,
+        "item_id": "IPIP50_I_002",
+        "dimension": "intellect",
+        "key": 1,
+        "response": 3,
+        "theta_after": [
+          -0.002941068261861801,
+          0.007805702276527882,
+          -0.012196140363812447,
+          0.0026194469537585974,
+          0.42624151706695557
+        ]
+      },
+      {
+        "step": 3,
+        "item_id": "IPIP50_C_006",
+        "dimension": "conscientiousness",
+        "key": 1,
+        "response": 5,
+        "theta_after": [
+          0.002400822937488556,
+          0.0011084782890975475,
+          0.2289440929889679,
+          -0.0007306206971406937,
+          0.4242074489593506
+        ]
+      },
+      {
+        "step": 4,
+        "item_id": "IPIP50_A_007",
+        "dimension": "agreeableness",
+        "key": -1,
+        "response": 4,
+        "theta_after": [
+          0.0021995080169290304,
+          0.23906928300857544,
+          0.22716154158115387,
+          -0.00011986662866547704,
+          0.42483851313591003
+        ]
+      },
+      {
+        "step": 5,
+        "item_id": "IPIP50_A_003",
+        "dimension": "agreeableness",
+        "key": 1,
+        "response": 2,
+        "theta_after": [
+          0.0034575113095343113,
+          -0.019252270460128784,
+          0.22506000101566315,
+          -0.005639709532260895,
+          0.4260261356830597
+        ]
+      },
+      {
+        "step": 6,
+        "item_id": "IPIP50_E_001",
+        "dimension": "extraversion",
+        "key": 1,
+        "response": 1,
+        "theta_after": [
+          -0.2979012727737427,
+          -0.015850437805056572,
+          0.21991533041000366,
+          -0.003109612734988332,
+          0.42639392614364624
+        ]
+      },
+      {
+        "step": 7,
+        "item_id": "IPIP50_E_006",
+        "dimension": "extraversion",
+        "key": -1,
+        "response": 1,
+        "theta_after": [
+          -0.5825014114379883,
+          -0.014318138360977173,
+          0.21725112199783325,
+          -0.007440523244440556,
+          0.4343467354774475
+        ]
+      },
+      {
+        "step": 8,
+        "item_id": "IPIP50_ES_001",
+        "dimension": "emotional_stability",
+        "key": 1,
+        "response": 4,
+        "theta_after": [
+          -0.5815899968147278,
+          -0.016101552173495293,
+          0.217068612575531,
+          0.260508269071579,
+          0.4315706491470337
+        ]
+      },
+      {
+        "step": 9,
+        "item_id": "IPIP50_ES_002",
+        "dimension": "emotional_stability",
+        "key": 1,
+        "response": 3,
+        "theta_after": [
+          -0.5815899968147278,
+          -0.016101552173495293,
+          0.217068612575531,
+          0.260508269071579,
+          0.4315706491470337
+        ]
+      },
+      {
+        "step": 10,
+        "item_id": "IPIP50_C_008",
+        "dimension": "conscientiousness",
+        "key": -1,
+        "response": 5,
+        "theta_after": [
+          -0.577212929725647,
+          -0.009814975783228874,
+          0.449858695268631,
+          0.25665077567100525,
+          0.44299525022506714
+        ]
+      },
+      {
+        "step": 11,
+        "item_id": "IPIP50_A_008",
+        "dimension": "agreeableness",
+        "key": -1,
+        "response": 4,
+        "theta_after": [
+          -0.5782633423805237,
+          0.30534446239471436,
+          0.4461953341960907,
+          0.2558043301105499,
+          0.4424401819705963
+        ]
+      },
+      {
+        "step": 12,
+        "item_id": "IPIP50_A_009",
+        "dimension": "agreeableness",
+        "key": -1,
+        "response": 3,
+        "theta_after": [
+          -0.5782633423805237,
+          0.30534446239471436,
+          0.4461953341960907,
+          0.2558043301105499,
+          0.4424401819705963
+        ]
+      }
+    ]
+  },
+  {
+    "persona": "focused_introvert",
+    "scoring_model": "grm",
+    "max_items": 12,
+    "answered_count": 12,
+    "trait_estimates": {
+      "extraversion": -0.22889770567417145,
+      "agreeableness": 0.09364252537488937,
+      "conscientiousness": 0.16932076215744019,
+      "emotional_stability": 0.07197106629610062,
+      "intellect": 0.230543851852417
+    },
+    "tendency_t_scores": {
+      "extraversion": 47.711021423339844,
+      "agreeableness": 50.936424255371094,
+      "conscientiousness": 51.693206787109375,
+      "emotional_stability": 50.71971130371094,
+      "intellect": 52.30543899536133
+    },
+    "classical_big5": {
+      "extraversion": {
+        "answered_count": 2,
+        "raw_mean": 3.0,
+        "centered_score": 0.0,
+        "tendency_t_score": 50.0
+      },
+      "agreeableness": {
+        "answered_count": 3,
+        "raw_mean": 2.3333333333333335,
+        "centered_score": -0.33333333333333326,
+        "tendency_t_score": 46.666666666666664
+      },
+      "conscientiousness": {
+        "answered_count": 2,
+        "raw_mean": 5.0,
+        "centered_score": 1.0,
+        "tendency_t_score": 60.0
+      },
+      "emotional_stability": {
+        "answered_count": 2,
+        "raw_mean": 3.5,
+        "centered_score": 0.25,
+        "tendency_t_score": 52.5
+      },
+      "intellect": {
+        "answered_count": 3,
+        "raw_mean": 3.6666666666666665,
+        "centered_score": 0.33333333333333326,
+        "tendency_t_score": 53.333333333333336
+      }
+    },
+    "path": [
+      {
+        "step": 1,
+        "item_id": "IPIP50_I_003",
+        "dimension": "intellect",
+        "key": 1,
+        "response": 4,
+        "theta_after": [
+          -0.0005723476642742753,
+          0.0015190314734354615,
+          -0.0023734341375529766,
+          0.0005097584216855466,
+          0.08294887095689774
+        ]
+      },
+      {
+        "step": 2,
+        "item_id": "IPIP50_I_007",
+        "dimension": "intellect",
+        "key": 1,
+        "response": 4,
+        "theta_after": [
+          0.0012007199693471193,
+          0.0018941815942525864,
+          -0.0013295839307829738,
+          0.00022041352349333465,
+          0.1412515938282013
+        ]
+      },
+      {
+        "step": 3,
+        "item_id": "IPIP50_C_006",
+        "dimension": "conscientiousness",
+        "key": 1,
+        "response": 5,
+        "theta_after": [
+          0.0035122905392199755,
+          -0.0010038753971457481,
+          0.10301785171031952,
+          -0.0012292449828237295,
+          0.1403714120388031
+        ]
+      },
+      {
+        "step": 4,
+        "item_id": "IPIP50_A_007",
+        "dimension": "agreeableness",
+        "key": -1,
+        "response": 4,
+        "theta_after": [
+          0.0035109359305351973,
+          0.0005973638035356998,
+          0.10300585627555847,
+          -0.0012251351727172732,
+          0.14037565886974335
+        ]
+      },
+      {
+        "step": 5,
+        "item_id": "IPIP50_A_003",
+        "dimension": "agreeableness",
+        "key": 1,
+        "response": 2,
+        "theta_after": [
+          0.003312648506835103,
+          0.04131421446800232,
+          0.10333710163831711,
+          -0.000355093099642545,
+          0.14018847048282623
+        ]
+      },
+      {
+        "step": 6,
+        "item_id": "IPIP50_E_001",
+        "dimension": "extraversion",
+        "key": 1,
+        "response": 1,
+        "theta_after": [
+          -0.1101958155632019,
+          0.04259553551673889,
+          0.10139933228492737,
+          0.0005978819099254906,
+          0.14032700657844543
+        ]
+      },
+      {
+        "step": 7,
+        "item_id": "IPIP50_E_006",
+        "dimension": "extraversion",
+        "key": -1,
+        "response": 1,
+        "theta_after": [
+          -0.2300243228673935,
+          0.04324069619178772,
+          0.10027758777141571,
+          -0.0012256118934601545,
+          0.14367546141147614
+        ]
+      },
+      {
+        "step": 8,
+        "item_id": "IPIP50_ES_002",
+        "dimension": "emotional_stability",
+        "key": 1,
+        "response": 3,
+        "theta_after": [
+          -0.23069536685943604,
+          0.04265568032860756,
+          0.0996822789311409,
+          0.051083583384752274,
+          0.1443513184785843
+        ]
+      },
+      {
+        "step": 9,
+        "item_id": "IPIP50_ES_001",
+        "dimension": "emotional_stability",
+        "key": 1,
+        "response": 4,
+        "theta_after": [
+          -0.23062925040721893,
+          0.04252631589770317,
+          0.09966903924942017,
+          0.07051965594291687,
+          0.14414994418621063
+        ]
+      },
+      {
+        "step": 10,
+        "item_id": "IPIP50_C_001",
+        "dimension": "conscientiousness",
+        "key": 1,
+        "response": 5,
+        "theta_after": [
+          -0.22969681024551392,
+          0.043361492455005646,
+          0.16754476726055145,
+          0.07175559550523758,
+          0.14357434213161469
+        ]
+      },
+      {
+        "step": 11,
+        "item_id": "IPIP50_A_009",
+        "dimension": "agreeableness",
+        "key": -1,
+        "response": 3,
+        "theta_after": [
+          -0.22964638471603394,
+          0.09450820088386536,
+          0.1687057614326477,
+          0.07161342352628708,
+          0.14526265859603882
+        ]
+      },
+      {
+        "step": 12,
+        "item_id": "IPIP50_I_002",
+        "dimension": "intellect",
+        "key": 1,
+        "response": 3,
+        "theta_after": [
+          -0.22889770567417145,
+          0.09364252537488937,
+          0.16932076215744019,
+          0.07197106629610062,
+          0.230543851852417
+        ]
+      }
+    ]
+  },
+  {
+    "persona": "stressed_explorer",
+    "scoring_model": "binary_2pl",
+    "max_items": 12,
+    "answered_count": 12,
+    "trait_estimates": {
+      "extraversion": 0.3888329565525055,
+      "agreeableness": -0.0014715942088514566,
+      "conscientiousness": -0.31850650906562805,
+      "emotional_stability": -0.9262034893035889,
+      "intellect": 0.8834837675094604
+    },
+    "tendency_t_scores": {
+      "extraversion": 53.888328552246094,
+      "agreeableness": 49.98528289794922,
+      "conscientiousness": 46.81493377685547,
+      "emotional_stability": 40.73796463012695,
+      "intellect": 58.8348388671875
+    },
+    "classical_big5": {
+      "extraversion": {
+        "answered_count": 2,
+        "raw_mean": 3.5,
+        "centered_score": 0.25,
+        "tendency_t_score": 52.5
+      },
+      "agreeableness": {
+        "answered_count": 2,
+        "raw_mean": 3.0,
+        "centered_score": 0.0,
+        "tendency_t_score": 50.0
+      },
+      "conscientiousness": {
+        "answered_count": 3,
+        "raw_mean": 3.3333333333333335,
+        "centered_score": 0.16666666666666674,
+        "tendency_t_score": 51.666666666666664
+      },
+      "emotional_stability": {
+        "answered_count": 3,
+        "raw_mean": 2.0,
+        "centered_score": -0.5,
+        "tendency_t_score": 45.0
+      },
+      "intellect": {
+        "answered_count": 2,
+        "raw_mean": 4.5,
+        "centered_score": 0.75,
+        "tendency_t_score": 57.5
+      }
+    },
+    "path": [
+      {
+        "step": 1,
+        "item_id": "IPIP50_I_003",
+        "dimension": "intellect",
+        "key": 1,
+        "response": 5,
+        "theta_after": [
+          -0.002941068261861801,
+          0.007805702276527882,
+          -0.012196140363812447,
+          0.0026194469537585974,
+          0.42624151706695557
+        ]
+      },
+      {
+        "step": 2,
+        "item_id": "IPIP50_I_002",
+        "dimension": "intellect",
+        "key": 1,
+        "response": 4,
+        "theta_after": [
+          0.0012330147437751293,
+          0.0029793791472911835,
+          -0.008767420426011086,
+          0.0046133981086313725,
+          0.9017024636268616
+        ]
+      },
+      {
+        "step": 3,
+        "item_id": "IPIP50_C_006",
+        "dimension": "conscientiousness",
+        "key": 1,
+        "response": 3,
+        "theta_after": [
+          0.0012330147437751293,
+          0.0029793791472911835,
+          -0.008767420426011086,
+          0.0046133981086313725,
+          0.9017024636268616
+        ]
+      },
+      {
+        "step": 4,
+        "item_id": "IPIP50_A_007",
+        "dimension": "agreeableness",
+        "key": -1,
+        "response": 3,
+        "theta_after": [
+          0.0012330147437751293,
+          0.0029793791472911835,
+          -0.008767420426011086,
+          0.0046133981086313725,
+          0.9017024636268616
+        ]
+      },
+      {
+        "step": 5,
+        "item_id": "IPIP50_A_008",
+        "dimension": "agreeableness",
+        "key": -1,
+        "response": 3,
+        "theta_after": [
+          0.0012330147437751293,
+          0.0029793791472911835,
+          -0.008767420426011086,
+          0.0046133981086313725,
+          0.9017024636268616
+        ]
+      },
+      {
+        "step": 6,
+        "item_id": "IPIP50_E_001",
+        "dimension": "extraversion",
+        "key": 1,
+        "response": 4,
+        "theta_after": [
+          0.3932361304759979,
+          -0.0014456752687692642,
+          -0.002075314987450838,
+          0.0013222850393503904,
+          0.9012240171432495
+        ]
+      },
+      {
+        "step": 7,
+        "item_id": "IPIP50_E_004",
+        "dimension": "extraversion",
+        "key": 1,
+        "response": 3,
+        "theta_after": [
+          0.3932361304759979,
+          -0.0014456752687692642,
+          -0.002075314987450838,
+          0.0013222850393503904,
+          0.9012240171432495
+        ]
+      },
+      {
+        "step": 8,
+        "item_id": "IPIP50_ES_002",
+        "dimension": "emotional_stability",
+        "key": 1,
+        "response": 1,
+        "theta_after": [
+          0.39623120427131653,
+          0.0011654328554868698,
+          0.0005817157216370106,
+          -0.23214936256408691,
+          0.898207426071167
+        ]
+      },
+      {
+        "step": 9,
+        "item_id": "IPIP50_ES_001",
+        "dimension": "emotional_stability",
+        "key": 1,
+        "response": 1,
+        "theta_after": [
+          0.3950960338115692,
+          0.0033867210149765015,
+          0.000809039338491857,
+          -0.5658866763114929,
+          0.9016650915145874
+        ]
+      },
+      {
+        "step": 10,
+        "item_id": "IPIP50_C_008",
+        "dimension": "conscientiousness",
+        "key": -1,
+        "response": 2,
+        "theta_after": [
+          0.3890589475631714,
+          -0.0052840569987893105,
+          -0.32026731967926025,
+          -0.560566246509552,
+          0.8859076499938965
+        ]
+      },
+      {
+        "step": 11,
+        "item_id": "IPIP50_ES_006",
+        "dimension": "emotional_stability",
+        "key": -1,
+        "response": 2,
+        "theta_after": [
+          0.3888329565525055,
+          -0.0014715942088514566,
+          -0.31850650906562805,
+          -0.9262034893035889,
+          0.8834837675094604
+        ]
+      },
+      {
+        "step": 12,
+        "item_id": "IPIP50_C_001",
+        "dimension": "conscientiousness",
+        "key": 1,
+        "response": 3,
+        "theta_after": [
+          0.3888329565525055,
+          -0.0014715942088514566,
+          -0.31850650906562805,
+          -0.9262034893035889,
+          0.8834837675094604
+        ]
+      }
+    ]
+  },
+  {
+    "persona": "stressed_explorer",
+    "scoring_model": "grm",
+    "max_items": 12,
+    "answered_count": 12,
+    "trait_estimates": {
+      "extraversion": 0.10558488219976425,
+      "agreeableness": -0.07165279239416122,
+      "conscientiousness": -0.1504315286874771,
+      "emotional_stability": -0.2247224897146225,
+      "intellect": 0.37733030319213867
+    },
+    "tendency_t_scores": {
+      "extraversion": 51.05584716796875,
+      "agreeableness": 49.283470153808594,
+      "conscientiousness": 48.49568557739258,
+      "emotional_stability": 47.752777099609375,
+      "intellect": 53.7733039855957
+    },
+    "classical_big5": {
+      "extraversion": {
+        "answered_count": 2,
+        "raw_mean": 3.0,
+        "centered_score": 0.0,
+        "tendency_t_score": 50.0
+      },
+      "agreeableness": {
+        "answered_count": 3,
+        "raw_mean": 3.3333333333333335,
+        "centered_score": 0.16666666666666674,
+        "tendency_t_score": 51.666666666666664
+      },
+      "conscientiousness": {
+        "answered_count": 2,
+        "raw_mean": 3.0,
+        "centered_score": 0.0,
+        "tendency_t_score": 50.0
+      },
+      "emotional_stability": {
+        "answered_count": 2,
+        "raw_mean": 1.0,
+        "centered_score": -1.0,
+        "tendency_t_score": 40.0
+      },
+      "intellect": {
+        "answered_count": 3,
+        "raw_mean": 4.666666666666667,
+        "centered_score": 0.8333333333333335,
+        "tendency_t_score": 58.333333333333336
+      }
+    },
+    "path": [
+      {
+        "step": 1,
+        "item_id": "IPIP50_I_003",
+        "dimension": "intellect",
+        "key": 1,
+        "response": 5,
+        "theta_after": [
+          -0.0009520179592072964,
+          0.002526690252125263,
+          -0.003947865683585405,
+          0.0008479097159579396,
+          0.13797353208065033
+        ]
+      },
+      {
+        "step": 2,
+        "item_id": "IPIP50_C_006",
+        "dimension": "conscientiousness",
+        "key": 1,
+        "response": 3,
+        "theta_after": [
+          -0.002364109270274639,
+          0.004297054372727871,
+          -0.06769158691167831,
+          0.0017334765288978815,
+          0.13851122558116913
+        ]
+      },
+      {
+        "step": 3,
+        "item_id": "IPIP50_I_007",
+        "dimension": "intellect",
+        "key": 1,
+        "response": 5,
+        "theta_after": [
+          0.0013693398796021938,
+          0.005086986813694239,
+          -0.0654936134815216,
+          0.0011242192704230547,
+          0.2612760066986084
+        ]
+      },
+      {
+        "step": 4,
+        "item_id": "IPIP50_A_007",
+        "dimension": "agreeableness",
+        "key": -1,
+        "response": 3,
+        "theta_after": [
+          0.0014231272507458925,
+          -0.05849149078130722,
+          -0.06501735001802444,
+          0.0009610377019271255,
+          0.2611073851585388
+        ]
+      },
+      {
+        "step": 5,
+        "item_id": "IPIP50_A_004",
+        "dimension": "agreeableness",
+        "key": 1,
+        "response": 4,
+        "theta_after": [
+          0.0014601018046960235,
+          -0.06348008662462234,
+          -0.06494662165641785,
+          0.0009561344049870968,
+          0.261004239320755
+        ]
+      },
+      {
+        "step": 6,
+        "item_id": "IPIP50_E_001",
+        "dimension": "extraversion",
+        "key": 1,
+        "response": 4,
+        "theta_after": [
+          0.07636846601963043,
+          -0.06432567536830902,
+          -0.06366781890392303,
+          0.0003272315952926874,
+          0.26091280579566956
+        ]
+      },
+      {
+        "step": 7,
+        "item_id": "IPIP50_ES_002",
+        "dimension": "emotional_stability",
+        "key": 1,
+        "response": 1,
+        "theta_after": [
+          0.07764638960361481,
+          -0.063211590051651,
+          -0.0625341385602951,
+          -0.09928866475820541,
+          0.25962570309638977
+        ]
+      },
+      {
+        "step": 8,
+        "item_id": "IPIP50_ES_001",
+        "dimension": "emotional_stability",
+        "key": 1,
+        "response": 1,
+        "theta_after": [
+          0.0772220566868782,
+          -0.06238127127289772,
+          -0.06244916468858719,
+          -0.22403988242149353,
+          0.26091820001602173
+        ]
+      },
+      {
+        "step": 9,
+        "item_id": "IPIP50_E_006",
+        "dimension": "extraversion",
+        "key": -1,
+        "response": 4,
+        "theta_after": [
+          0.10576479882001877,
+          -0.06253494322299957,
+          -0.06218196824193001,
+          -0.22360552847385406,
+          0.26012060046195984
+        ]
+      },
+      {
+        "step": 10,
+        "item_id": "IPIP50_C_001",
+        "dimension": "conscientiousness",
+        "key": 1,
+        "response": 3,
+        "theta_after": [
+          0.10453984886407852,
+          -0.06363212317228317,
+          -0.1513507217168808,
+          -0.2252291887998581,
+          0.26087677478790283
+        ]
+      },
+      {
+        "step": 11,
+        "item_id": "IPIP50_I_002",
+        "dimension": "intellect",
+        "key": 1,
+        "response": 4,
+        "theta_after": [
+          0.10556209087371826,
+          -0.06481409817934036,
+          -0.1505110263824463,
+          -0.2247408628463745,
+          0.37731826305389404
+        ]
+      },
+      {
+        "step": 12,
+        "item_id": "IPIP50_A_008",
+        "dimension": "agreeableness",
+        "key": -1,
+        "response": 3,
+        "theta_after": [
+          0.10558488219976425,
+          -0.07165279239416122,
+          -0.1504315286874771,
+          -0.2247224897146225,
+          0.37733030319213867
+        ]
+      }
+    ]
+  }
+]

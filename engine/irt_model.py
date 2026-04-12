@@ -9,8 +9,10 @@ import torch
 
 from .math_utils import (
     binary_fisher_information,
+    binary_fisher_information_matrix,
     binary_theta_update,
     grm_fisher_information,
+    grm_fisher_information_matrix,
     grm_theta_update,
     grm_thresholds_from_location,
     resolve_device,
@@ -63,6 +65,11 @@ class AdaptiveMMPIRouter:
         self.a, self.b, self.param_metadata = self._load_params()
         self.thresholds = grm_thresholds_from_location(self.b)
         self.theta = torch.zeros(len(self.dimensions), device=self.device, dtype=self.a.dtype)
+        self.information_matrix = torch.zeros(
+            (len(self.dimensions), len(self.dimensions)),
+            device=self.device,
+            dtype=self.a.dtype,
+        )
         self.answered_indices: set[int] = set()
         self.history: list[dict[str, object]] = []
 
@@ -106,6 +113,10 @@ class AdaptiveMMPIRouter:
             raise ValueError("coverage_min_per_dimension must be non-negative.")
 
     @property
+    def key_aligned(self) -> bool:
+        return bool(self.param_metadata.get("key_aligned", False))
+
+    @property
     def answered_count(self) -> int:
         return len(self.answered_indices)
 
@@ -115,6 +126,11 @@ class AdaptiveMMPIRouter:
 
     def reset(self) -> None:
         self.theta = torch.zeros(len(self.dimensions), device=self.device, dtype=self.a.dtype)
+        self.information_matrix = torch.zeros(
+            (len(self.dimensions), len(self.dimensions)),
+            device=self.device,
+            dtype=self.a.dtype,
+        )
         self.answered_indices.clear()
         self.history.clear()
 
@@ -130,6 +146,40 @@ class AdaptiveMMPIRouter:
             scores[answered] = -torch.inf
         return scores
 
+    def fisher_information_matrix(self, item_id: str) -> torch.Tensor:
+        index = self._index_for_item_id(item_id)
+        if self.scoring_model == "binary_2pl":
+            return binary_fisher_information_matrix(self.theta, self.a[index], self.b[index])
+        return grm_fisher_information_matrix(self.theta, self.a[index], self.thresholds[index])
+
+    def cumulative_information_matrix(self) -> torch.Tensor:
+        return self.information_matrix.clone()
+
+    def covariance_matrix(self, *, ridge: float = 1e-3) -> torch.Tensor:
+        identity = torch.eye(len(self.dimensions), device=self.device, dtype=self.a.dtype)
+        regularized = self.information_matrix + ridge * identity
+        return torch.linalg.pinv(regularized)
+
+    def standard_errors(self, *, ridge: float = 1e-3) -> dict[str, float]:
+        covariance = self.covariance_matrix(ridge=ridge).detach().cpu()
+        diagonal = torch.diagonal(covariance).clamp_min(0.0)
+        return {
+            dimension: float(torch.sqrt(diagonal[index]))
+            for index, dimension in enumerate(self.dimensions)
+        }
+
+    def uncertainty_summary(self, *, ridge: float = 1e-3) -> dict[str, float | bool]:
+        covariance = self.covariance_matrix(ridge=ridge).detach().cpu()
+        diagonal = torch.diagonal(covariance).clamp_min(0.0)
+        std_errors = torch.sqrt(diagonal)
+        mean_se = float(std_errors.mean())
+        max_se = float(std_errors.max())
+        return {
+            "mean_standard_error": mean_se,
+            "max_standard_error": max_se,
+            "confidence_ready": bool(mean_se <= 0.85 and self.answered_count >= len(self.dimensions)),
+        }
+
     def select_next_item(self) -> dict[str, object] | None:
         if self.remaining_count <= 0:
             return None
@@ -140,39 +190,60 @@ class AdaptiveMMPIRouter:
         item["scoring_model"] = self.scoring_model
         return item
 
-    def answer_item(self, item_id: str, response: int) -> dict[str, object]:
+    def update_theta(
+        self,
+        item_id: str,
+        response: int | float,
+        *,
+        source: Literal["likert", "binary", "llm"] = "likert",
+        response_weight: float = 1.0,
+    ) -> dict[str, object]:
         index = self._index_for_item_id(item_id)
         if index in self.answered_indices:
             raise ValueError(f"Item already answered: {item_id}")
 
         previous_theta = self.theta.clone()
+        item_information = self.fisher_information_matrix(item_id)
+        keyed_response = self._keyed_response(index, response, source=source)
         if self.scoring_model == "binary_2pl":
             self.theta = binary_theta_update(
                 self.theta,
                 self.a[index],
                 self.b[index],
-                response,
+                keyed_response,
+                source=source,
+                response_weight=response_weight,
                 learning_rate=self.binary_learning_rate,
             )
         else:
+            if source != "likert":
+                raise ValueError("GRM updates currently require Likert responses.")
             self.theta = grm_theta_update(
                 self.theta,
                 self.a[index],
                 self.thresholds[index],
-                response,
+                int(keyed_response),
                 learning_rate=self.grm_learning_rate,
             )
 
         self.answered_indices.add(index)
+        self.information_matrix = self.information_matrix + item_information
         record = {
             "item_id": item_id,
             "response": response,
+            "keyed_response": keyed_response,
+            "response_source": source,
+            "response_weight": response_weight,
             "scoring_model": self.scoring_model,
             "theta_before": previous_theta.detach().cpu().tolist(),
             "theta_after": self.theta.detach().cpu().tolist(),
+            "information_trace_after": float(torch.trace(self.information_matrix).detach().cpu()),
         }
         self.history.append(record)
         return record
+
+    def answer_item(self, item_id: str, response: int) -> dict[str, object]:
+        return self.update_theta(item_id, response, source="likert", response_weight=1.0)
 
     def trait_estimates(self) -> dict[str, float]:
         theta_cpu = self.theta.detach().cpu()
@@ -212,6 +283,22 @@ class AdaptiveMMPIRouter:
         if torch.isneginf(masked_scores).all():
             return int(torch.argmax(scores).item())
         return int(torch.argmax(masked_scores).item())
+
+    def _keyed_response(
+        self,
+        index: int,
+        response: int | float,
+        *,
+        source: Literal["likert", "binary", "llm"],
+    ) -> int | float:
+        if self.key_aligned:
+            return response
+        key = self.items[index].key
+        if key >= 0:
+            return response
+        if source == "likert":
+            return 6 - int(response)
+        return 1.0 - float(response)
 
     def _index_for_item_id(self, item_id: str) -> int:
         for item in self.items:

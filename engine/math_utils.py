@@ -6,6 +6,7 @@ import torch
 
 
 NeutralPolicy = Literal["skip", "zero"]
+ResponseSource = Literal["binary", "likert", "llm"]
 
 
 def resolve_device(preferred: str | torch.device | None = None) -> torch.device:
@@ -31,6 +32,15 @@ def binary_fisher_information(theta: torch.Tensor, a: torch.Tensor, b: torch.Ten
     return probabilities * (1.0 - probabilities) * discrimination_power
 
 
+def binary_fisher_information_matrix(
+    theta: torch.Tensor,
+    item_a: torch.Tensor,
+    item_b: torch.Tensor,
+) -> torch.Tensor:
+    probability = mirt_2pl_probability(theta, item_a.unsqueeze(0), item_b.unsqueeze(0))[0]
+    return probability * (1.0 - probability) * torch.outer(item_a, item_a)
+
+
 def likert_to_binary(response: int, *, neutral_policy: NeutralPolicy = "skip") -> float | None:
     if response not in {1, 2, 3, 4, 5}:
         raise ValueError("Likert response must be an integer from 1 to 5.")
@@ -43,23 +53,51 @@ def likert_to_binary(response: int, *, neutral_policy: NeutralPolicy = "skip") -
     return 0.5
 
 
+def response_to_target(
+    response: int | float,
+    *,
+    source: ResponseSource = "likert",
+    neutral_policy: NeutralPolicy = "skip",
+) -> float | None:
+    if source == "likert":
+        if not isinstance(response, int):
+            raise ValueError("Likert response must be an integer from 1 to 5.")
+        return likert_to_binary(response, neutral_policy=neutral_policy)
+
+    if source == "binary":
+        target = float(response)
+        if target not in {0.0, 1.0}:
+            raise ValueError("Binary response must be 0 or 1.")
+        return target
+
+    target = float(response)
+    if not 0.0 <= target <= 1.0:
+        raise ValueError("LLM response weight must be between 0.0 and 1.0.")
+    return target
+
+
 def binary_theta_update(
     theta: torch.Tensor,
     item_a: torch.Tensor,
     item_b: torch.Tensor,
-    response: int,
+    response: int | float,
     *,
+    source: ResponseSource = "likert",
+    response_weight: float = 1.0,
     learning_rate: float = 0.35,
     neutral_policy: NeutralPolicy = "skip",
     max_abs_theta: float = 4.0,
 ) -> torch.Tensor:
-    target = likert_to_binary(response, neutral_policy=neutral_policy)
+    if response_weight <= 0.0:
+        raise ValueError("response_weight must be positive.")
+
+    target = response_to_target(response, source=source, neutral_policy=neutral_policy)
     if target is None:
         return theta.clone()
 
     probability = mirt_2pl_probability(theta, item_a.unsqueeze(0), item_b.unsqueeze(0))[0]
     gradient = (torch.as_tensor(target, device=theta.device, dtype=theta.dtype) - probability) * item_a
-    updated = theta + learning_rate * gradient
+    updated = theta + (learning_rate * response_weight) * gradient
     return torch.clamp(updated, min=-max_abs_theta, max=max_abs_theta)
 
 
@@ -93,6 +131,22 @@ def grm_fisher_information(theta: torch.Tensor, a: torch.Tensor, thresholds: tor
     variance = torch.sum(probabilities * (scores - expected.unsqueeze(-1)) ** 2, dim=-1)
     discrimination_power = torch.sum(a * a, dim=-1)
     return variance * discrimination_power
+
+
+def grm_fisher_information_matrix(
+    theta: torch.Tensor,
+    item_a: torch.Tensor,
+    item_thresholds: torch.Tensor,
+) -> torch.Tensor:
+    probabilities = grm_category_probabilities(
+        theta,
+        item_a.unsqueeze(0),
+        item_thresholds.unsqueeze(0),
+    )[0]
+    scores = torch.arange(1, probabilities.shape[-1] + 1, device=item_a.device, dtype=item_a.dtype)
+    expected = torch.sum(probabilities * scores)
+    variance = torch.sum(probabilities * (scores - expected) ** 2)
+    return variance * torch.outer(item_a, item_a)
 
 
 def grm_theta_update(

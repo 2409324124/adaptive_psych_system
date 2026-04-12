@@ -10,8 +10,10 @@ Dynamic adaptive psychological assessment system based on MIRT/CAT, PyTorch, loc
 - Full pulled item bank: official IPIP 3,320-item alphabetical list in `data/ipip_full_item_bank.json`
 - Item assignment table: `data/ipip_item_assignment_table.json`
 - Mock MIRT/2PL parameters: `data/mock_params.pt`
+- Key-aware experimental parameters: `data/mock_params_keyed.pt`
 - Adaptive routing: coverage-aware item selection keeps early short tests from ignoring low-evidence traits
 - Architecture and project memory: `memory/`
+- Design vision: `docs/adaptive_measurement_vision.md`
 
 ## Environment
 
@@ -47,6 +49,24 @@ API docs:
 http://127.0.0.1:8000/docs
 ```
 
+Session behavior:
+
+- Default backend is in-memory session storage.
+- Set `CAT_PSYCH_SESSION_BACKEND=json` to enable local JSON session persistence.
+- Session timeout is controlled by `CAT_PSYCH_SESSION_TTL_SECONDS` and defaults to `7200`.
+- Optional JSON files are stored under `data/sessions/` unless `CAT_PSYCH_SESSION_DIR` is provided.
+
+Session API highlights:
+
+- `POST /sessions`
+- `GET /sessions/{session_id}`
+- `GET /sessions/{session_id}/next`
+- `POST /sessions/{session_id}/responses`
+- `GET /sessions/{session_id}/result`
+- `GET /sessions/{session_id}/export`
+- `POST /sessions/{session_id}/restart`
+- `DELETE /sessions/{session_id}`
+
 ## Data Preparation
 
 Official raw IPIP files are stored under `data/raw/`.
@@ -73,6 +93,7 @@ The first engine pass supports two scoring modes:
 - `classical_big5`: traditional IPIP-style baseline scorer that reverse-keys items and averages Likert scores per trait for comparison.
 
 The router now applies a small coverage guard before pure maximum-information selection. By default, it tries to gather at least two answered items per Big-Five dimension before fully relaxing into global Fisher-information routing. The Web result view marks classical trait comparisons with `low evidence` when a trait has fewer than two answered items.
+The result payload now also includes a rules-based interpretation layer with an overview, higher/lower tendency notes, and low-evidence cautions.
 
 Smoke test:
 
@@ -84,6 +105,42 @@ Run a small simulation comparing both engine paths:
 
 ```powershell
 conda run -n IPIP python scripts\simulate_adaptive_sessions.py --max-items 12
+```
+
+Benchmark several early-stopping rule combinations:
+
+```powershell
+conda activate IPIP
+python scripts\benchmark_stopping_rules.py --max-items 50 --param-mode legacy
+```
+
+Generate a key-aware mock parameter file for reverse-keyed items:
+
+```powershell
+conda activate IPIP
+python scripts\generate_key_aware_mock_params.py --output data\mock_params_keyed.pt
+```
+
+Run the same benchmark with the key-aware parameter baseline:
+
+```powershell
+conda activate IPIP
+python scripts\benchmark_stopping_rules.py --max-items 50 --param-mode keyed
+```
+
+Run simulations with an explicit parameter mode:
+
+```powershell
+conda activate IPIP
+python scripts\simulate_adaptive_sessions.py --max-items 12 --param-mode legacy
+python scripts\simulate_adaptive_sessions.py --max-items 12 --param-mode keyed
+```
+
+Generate a side-by-side legacy vs keyed comparison bundle:
+
+```powershell
+conda activate IPIP
+python scripts\compare_param_modes.py --max-items 50 --output data\param_mode_comparison.json
 ```
 
 Run a manual terminal assessment:
@@ -99,6 +156,16 @@ Run the CLI in non-interactive demo mode:
 ```powershell
 conda run -n IPIP python scripts\run_cli_assessment.py --demo-responses 5,4,3,2,1 --max-items 5
 ```
+
+## Design Notes
+
+Parameter strategy:
+
+- `legacy` mode uses `data/mock_params.pt` and keeps reverse-key handling in the response-processing layer.
+- `keyed` mode uses `data/mock_params_keyed.pt` and treats reverse-key direction as already encoded in `a`, so runtime code must not flip responses again.
+- The project intentionally keeps both modes for comparison. The default remains `legacy` for now so old benchmark snapshots and demos do not silently change.
+
+- `docs/adaptive_measurement_vision.md`: product thesis, ethics boundary, technical direction, and MVP/research roadmap for the adaptive measurement architecture.
 
 ## Ethics Notice
 

@@ -4,6 +4,7 @@ import argparse
 import json
 import sys
 from dataclasses import dataclass
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Iterable
 
@@ -13,7 +14,10 @@ ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
-from engine import AdaptiveMMPIRouter, ClassicalBigFiveScorer
+from engine import AdaptiveMMPIRouter, ClassicalBigFiveScorer, resolve_param_source
+
+
+SCRIPT_VERSION = "2026-04-12-param-mode-v1"
 
 
 TRAIT_ORDER = [
@@ -48,7 +52,7 @@ def simulated_response(router: AdaptiveMMPIRouter, item_index: int, persona_thet
     item_a = router.a[item_index].detach().cpu()
     item_b = router.b[item_index].detach().cpu()
     probability = torch.sigmoid(item_a @ persona_theta - item_b).item()
-    if item.key < 0:
+    if item.key < 0 and not router.key_aligned:
         probability = 1.0 - probability
     return clamp_likert(1.0 + 4.0 * probability)
 
@@ -59,8 +63,11 @@ def run_session(
     scoring_model: str,
     max_items: int,
     device: str | None,
+    param_mode: str | None,
+    param_path: str | None,
 ) -> dict[str, object]:
-    router = AdaptiveMMPIRouter(scoring_model=scoring_model, device=device)
+    resolved_mode, resolved_path = resolve_param_source(param_mode=param_mode, param_path=param_path)
+    router = AdaptiveMMPIRouter(scoring_model=scoring_model, device=device, param_path=resolved_path)
     classical = ClassicalBigFiveScorer(item_path=router.item_path)
     path: list[dict[str, object]] = []
     responses: dict[str, int] = {}
@@ -84,21 +91,31 @@ def run_session(
             }
         )
 
+    classical_scores = classical.score(responses)
+    dimension_counts = router.dimension_answer_counts()
+    uncertainty = router.uncertainty_summary()
     return {
         "persona": persona.name,
         "scoring_model": scoring_model,
         "max_items": max_items,
+        "param_mode": resolved_mode,
+        "param_path": str(resolved_path),
+        "key_aligned": router.key_aligned,
+        "param_metadata": dict(router.param_metadata),
         "answered_count": router.answered_count,
+        "mean_standard_error": uncertainty["mean_standard_error"],
+        "confidence_ready": uncertainty["confidence_ready"],
+        "dimension_answer_counts": dimension_counts,
         "trait_estimates": router.trait_estimates(),
-        "tendency_t_scores": router.tendency_t_scores(),
-        "classical_big5": classical.score(responses),
+        "irt_t_scores": router.tendency_t_scores(),
+        "classical_big5": classical_scores,
         "path": path,
     }
 
 
 def summarize_session(session: dict[str, object]) -> str:
     traits = session["trait_estimates"]
-    t_scores = session["tendency_t_scores"]
+    t_scores = session["irt_t_scores"]
     classical = session["classical_big5"]
     assert isinstance(traits, dict)
     assert isinstance(t_scores, dict)
@@ -126,7 +143,9 @@ def run_matrix(
     scoring_models: Iterable[str],
     max_items: int,
     device: str | None,
-) -> list[dict[str, object]]:
+    param_mode: str | None,
+    param_path: str | None,
+) -> dict[str, object]:
     sessions: list[dict[str, object]] = []
     for persona in personas:
         for scoring_model in scoring_models:
@@ -136,9 +155,23 @@ def run_matrix(
                     scoring_model=scoring_model,
                     max_items=max_items,
                     device=device,
+                    param_mode=param_mode,
+                    param_path=param_path,
                 )
             )
-    return sessions
+    first = sessions[0]
+    return {
+        "experiment": "simulation_matrix",
+        "script_version": SCRIPT_VERSION,
+        "generated_at": datetime.now(UTC).isoformat(),
+        "param_mode": first["param_mode"],
+        "param_path": first["param_path"],
+        "key_aligned": first["key_aligned"],
+        "param_metadata": dict(first["param_metadata"]),
+        "max_items": max_items,
+        "scoring_models": list(scoring_models),
+        "sessions": sessions,
+    }
 
 
 def parse_args() -> argparse.Namespace:
@@ -151,6 +184,13 @@ def parse_args() -> argparse.Namespace:
         help="Scoring model to simulate.",
     )
     parser.add_argument("--device", default=None, help="Torch device override, such as cpu or cuda.")
+    parser.add_argument(
+        "--param-mode",
+        choices=["legacy", "keyed"],
+        default=None,
+        help="Named parameter mode. Keeps old defaults unless explicitly set.",
+    )
+    parser.add_argument("--param-path", default=None, help="Optional torch parameter file path override.")
     parser.add_argument("--output", type=Path, default=None, help="Optional JSON output path.")
     return parser.parse_args()
 
@@ -163,9 +203,15 @@ def main() -> None:
         scoring_models=models,
         max_items=args.max_items,
         device=args.device,
+        param_mode=args.param_mode,
+        param_path=args.param_path,
     )
 
-    for session in sessions:
+    print(
+        f"PARAMS mode={sessions['param_mode']} key_aligned={sessions['key_aligned']} "
+        f"path={sessions['param_path']}"
+    )
+    for session in sessions["sessions"]:
         print(summarize_session(session))
 
     if args.output is not None:
