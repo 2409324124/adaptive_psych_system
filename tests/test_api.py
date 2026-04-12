@@ -7,7 +7,7 @@ from fastapi.testclient import TestClient
 
 import api.app as api_module
 from api.app import app
-from services import AssessmentSession, ResultInterpreter, SessionStore
+from services import AssessmentSession, ProgressEstimator, ResultInterpreter, SessionStore
 
 
 def test_assessment_session_flow() -> None:
@@ -27,8 +27,28 @@ def test_assessment_session_flow() -> None:
     assert "interpretation" in result
     assert "standard_errors" in result
     assert "uncertainty" in result
-    assert result["param_mode"] == "legacy"
-    assert result["key_aligned"] is False
+    assert result["param_mode"] == "keyed"
+    assert result["key_aligned"] is True
+    assert result["progress_estimate"]["estimate_source"] == "lookup_table"
+
+
+def test_progress_estimator_falls_back_for_unknown_combo() -> None:
+    estimate = ProgressEstimator().estimate(
+        param_mode="legacy",
+        scoring_model="grm",
+        coverage_min_per_dimension=9,
+        stop_mean_standard_error=0.11,
+        answered=0,
+        max_items=12,
+        complete=False,
+        min_items_met=False,
+        coverage_ready=False,
+        standard_error_ready=False,
+        stability_ready=False,
+        stopped_by="min_items_gate",
+    )
+    assert estimate["estimated_total_items"] == 12
+    assert estimate["estimate_source"] == "fallback_max_items"
 
 
 def test_cached_active_item_refreshes_progress_snapshot() -> None:
@@ -39,6 +59,7 @@ def test_cached_active_item_refreshes_progress_snapshot() -> None:
     again = session.next_question()
     assert again is not None
     assert again["progress"]["min_items"] == 1
+    assert again["progress_estimate"]["display_answered"] == 1
 
 
 def test_session_does_not_stop_before_min_items() -> None:
@@ -63,12 +84,97 @@ def test_session_can_stop_early_when_uncertainty_goal_is_met() -> None:
         min_items=1,
         coverage_min_per_dimension=0,
         stop_mean_standard_error=30.0,
+        stop_stability_score=0.0,
         device="cpu",
     )
     first = session.next_question()
     assert first is not None
     session.submit_response(str(first["item_id"]), 5)
     assert session.is_complete is True
+
+
+def test_session_can_finish_at_screening_stage_when_stable_and_precise() -> None:
+    session = AssessmentSession(
+        scoring_model="binary_2pl",
+        max_items=30,
+        min_items=5,
+        coverage_min_per_dimension=2,
+        stop_mean_standard_error=0.65,
+        stop_stability_score=0.7,
+        device="cpu",
+    )
+    session.router.answered_indices = set(range(10))
+    session.router.dimension_answer_counts = lambda: {dimension: 2 for dimension in session.router.dimensions}
+    session.router.uncertainty_summary = lambda: {"mean_standard_error": 0.82, "max_standard_error": 0.9, "confidence_ready": False}
+    session.stability = lambda: {"stability_score": 0.88, "stability_ready": True, "stability_stage": "stable"}
+
+    progress = session.progress()
+
+    assert progress["complete"] is True
+    assert progress["stopped_by"] == "screening_threshold"
+    assert progress["precision_mode"] == "screening"
+    assert progress["effective_stop_mean_standard_error"] == progress["screening_stop_mean_standard_error"]
+
+
+def test_session_wraps_when_screening_plateau_persists_past_trigger() -> None:
+    session = AssessmentSession(
+        scoring_model="binary_2pl",
+        max_items=30,
+        min_items=5,
+        coverage_min_per_dimension=2,
+        stop_mean_standard_error=0.65,
+        stop_stability_score=0.7,
+        device="cpu",
+    )
+    session.router.answered_indices = set(range(16))
+    session.router.dimension_answer_counts = lambda: {dimension: 3 for dimension in session.router.dimensions}
+    session.router.uncertainty_summary = lambda: {"mean_standard_error": 0.9, "max_standard_error": 1.0, "confidence_ready": False}
+    session.stability = lambda: {"stability_score": 0.92, "stability_ready": True, "stability_stage": "stable"}
+
+    progress = session.progress()
+
+    assert progress["complete"] is True
+    assert progress["stopped_by"] == "screening_plateau"
+    assert progress["precision_mode"] == "screening_plateau"
+    assert progress["screening_threshold_ready"] is False
+
+
+def test_session_waits_for_stability_before_stopping() -> None:
+    session = AssessmentSession(
+        scoring_model="binary_2pl",
+        max_items=8,
+        min_items=1,
+        coverage_min_per_dimension=0,
+        stop_mean_standard_error=30.0,
+        stop_stability_score=0.95,
+        device="cpu",
+    )
+    first = session.next_question()
+    assert first is not None
+    session.submit_response(str(first["item_id"]), 3)
+    assert session.is_complete is False
+    assert session.progress()["stopped_by"] == "stability_gate"
+
+
+def test_session_progress_marks_neutral_only_pattern_as_unstable() -> None:
+    session = AssessmentSession(
+        scoring_model="binary_2pl",
+        max_items=8,
+        min_items=1,
+        coverage_min_per_dimension=0,
+        stop_mean_standard_error=30.0,
+        stop_stability_score=0.7,
+        device="cpu",
+    )
+    for _ in range(3):
+        item = session.next_question()
+        assert item is not None
+        session.submit_response(str(item["item_id"]), 3)
+
+    progress = session.progress()
+    assert progress["stability_score"] <= 0.45
+    assert progress["stability_ready"] is False
+    assert progress["stability_stage"] != "stable"
 
 
 def test_result_interpreter_marks_low_evidence_traits() -> None:
@@ -105,6 +211,7 @@ def test_session_store_json_roundtrip(tmp_path: Path) -> None:
         param_path=None,
         coverage_min_per_dimension=1,
         stop_mean_standard_error=0.85,
+        stop_stability_score=0.7,
     )
     first = session.next_question()
     assert first is not None
@@ -130,6 +237,7 @@ def test_snapshot_preserves_active_item(tmp_path: Path) -> None:
         param_path=None,
         coverage_min_per_dimension=1,
         stop_mean_standard_error=0.85,
+        stop_stability_score=0.7,
     )
     first = session.next_question()
     assert first is not None
@@ -151,6 +259,7 @@ def test_session_store_expires_idle_sessions(tmp_path: Path) -> None:
         param_path=None,
         coverage_min_per_dimension=1,
         stop_mean_standard_error=0.85,
+        stop_stability_score=0.7,
     )
     session.updated_at = "2000-01-01T00:00:00+00:00"
     store.sessions[session.session_id] = session
@@ -186,9 +295,9 @@ def test_fastapi_session_flow(tmp_path: Path, monkeypatch) -> None:
             "max_items": 2,
             "min_items": 1,
             "device": "cpu",
-            "param_mode": "keyed",
             "coverage_min_per_dimension": 1,
             "stop_mean_standard_error": 5.0,
+            "stop_stability_score": 0.0,
         },
     )
     assert created.status_code == 200
@@ -199,11 +308,15 @@ def test_fastapi_session_flow(tmp_path: Path, monkeypatch) -> None:
     assert payload["min_items"] == 1
     assert payload["param_mode"] == "keyed"
     assert payload["key_aligned"] is True
+    assert payload["progress_estimate"]["estimated_total_items"] == 2
+    assert payload["progress_estimate"]["estimate_source"] == "fallback_max_items"
+    assert payload["stop_stability_score"] == 0.0
     summary = client.get(f"/sessions/{session_id}")
     assert summary.status_code == 200
     assert summary.json()["session_id"] == session_id
     assert summary.json()["min_items"] == 1
     assert summary.json()["progress"]["stopped_by"] == "min_items_gate"
+    assert "stability_score" in summary.json()["progress"]
 
     first_response = client.post(
         f"/sessions/{session_id}/responses",
@@ -233,12 +346,17 @@ def test_fastapi_session_flow(tmp_path: Path, monkeypatch) -> None:
     assert "overview" in result_payload["interpretation"]
     assert "param_metadata" in result_payload
     assert "stopped_by" in result_payload["progress"]
+    assert "progress_estimate" in result_payload
+    assert "stability" in result_payload
+    assert "stability_stage" in result_payload["progress"]
 
     exported = client.get(f"/sessions/{session_id}/export")
     assert exported.status_code == 200
     assert "attachment; filename=" in exported.headers["content-disposition"]
     assert exported.json()["session_id"] == session_id
     assert exported.json()["param_mode"] == "keyed"
+    assert exported.json()["progress_estimate"]["estimate_source"] == "fallback_max_items"
+    assert "stability" in exported.json()
 
     restarted = client.post(f"/sessions/{session_id}/restart")
     assert restarted.status_code == 200

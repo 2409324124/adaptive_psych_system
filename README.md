@@ -67,6 +67,20 @@ Session API highlights:
 - `POST /sessions/{session_id}/restart`
 - `DELETE /sessions/{session_id}`
 
+The Web setup panel now lets you tune:
+
+- `param_mode`
+- `max_items`
+- `min_items`
+- `coverage_min_per_dimension`
+- `stop_mean_standard_error`
+
+The live session view uses a lookup-table progress estimate so users see:
+
+- `current question / estimated total items`
+- estimated completion percent
+- current evidence stage
+
 ## Data Preparation
 
 Official raw IPIP files are stored under `data/raw/`.
@@ -94,6 +108,7 @@ The first engine pass supports two scoring modes:
 
 The router now applies a small coverage guard before pure maximum-information selection. By default, it tries to gather at least two answered items per Big-Five dimension before fully relaxing into global Fisher-information routing. The Web result view marks classical trait comparisons with `low evidence` when a trait has fewer than two answered items.
 The result payload now also includes a rules-based interpretation layer with an overview, higher/lower tendency notes, and low-evidence cautions.
+It also includes a `progress_estimate` block with `estimated_total_items`, `estimated_completion_percent`, `estimate_source`, `confidence_profile`, and `evidence_stage`.
 
 Smoke test:
 
@@ -161,9 +176,9 @@ conda run -n IPIP python scripts\run_cli_assessment.py --demo-responses 5,4,3,2,
 
 Parameter strategy:
 
+- `keyed` mode is now the default interactive experience for the Web app and API. It uses `data/mock_params_keyed.pt` and treats reverse-key direction as already encoded in `a`, so runtime code must not flip responses again.
 - `legacy` mode uses `data/mock_params.pt` and keeps reverse-key handling in the response-processing layer.
-- `keyed` mode uses `data/mock_params_keyed.pt` and treats reverse-key direction as already encoded in `a`, so runtime code must not flip responses again.
-- The project intentionally keeps both modes for comparison. The default remains `legacy` for now so old benchmark snapshots and demos do not silently change.
+- The project intentionally keeps both modes for comparison. `legacy` remains available for experiments and historical comparison, while `keyed + stop_mean_se=0.65 + max_items=30 + min_items=5` is the default user-facing path.
 
 - `docs/adaptive_measurement_vision.md`: product thesis, ethics boundary, technical direction, and MVP/research roadmap for the adaptive measurement architecture.
 

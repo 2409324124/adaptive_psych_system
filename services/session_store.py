@@ -34,6 +34,7 @@ class SessionStore:
         param_path: str | None,
         coverage_min_per_dimension: int,
         stop_mean_standard_error: float,
+        stop_stability_score: float,
     ) -> AssessmentSession:
         self.cleanup_expired()
         session = AssessmentSession(
@@ -45,6 +46,7 @@ class SessionStore:
             param_path=param_path,
             coverage_min_per_dimension=coverage_min_per_dimension,
             stop_mean_standard_error=stop_mean_standard_error,
+            stop_stability_score=stop_stability_score,
         )
         self.sessions[session.session_id] = session
         self._persist(session)

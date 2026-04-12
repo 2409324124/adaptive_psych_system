@@ -87,7 +87,9 @@ h3 {
 .notice,
 .response-caption,
 .question-kicker,
-.metric-caption {
+.metric-caption,
+#setupSummary,
+#sessionConfigLabel {
   line-height: 1.6;
 }
 
@@ -105,7 +107,8 @@ h3 {
 .session-header,
 .results-header,
 .progress-meta,
-.results-actions {
+.results-actions,
+.setup-primary {
   display: flex;
   gap: 14px;
   align-items: end;
@@ -114,6 +117,49 @@ h3 {
 
 .config-row {
   flex-wrap: wrap;
+}
+
+.setup-card {
+  display: grid;
+  gap: 18px;
+}
+
+.setup-primary {
+  align-items: center;
+}
+
+.setup-actions {
+  display: grid;
+  gap: 10px;
+  justify-items: end;
+  min-width: 220px;
+}
+
+.setup-actions .response-caption {
+  text-align: right;
+}
+
+.advanced-panel,
+.session-details,
+.experiment-details {
+  border: 1px solid #d9e1dc;
+  border-radius: 8px;
+  background: #ffffff;
+  padding: 14px 16px;
+}
+
+.advanced-panel summary,
+.session-details summary,
+.experiment-details summary {
+  cursor: pointer;
+  font-weight: 700;
+  color: #236150;
+}
+
+.advanced-panel[open],
+.session-details[open],
+.experiment-details[open] {
+  box-shadow: 0 1px 0 rgba(31, 42, 39, 0.04);
 }
 
 .results-actions {
@@ -173,6 +219,7 @@ button:disabled {
   margin-bottom: 10px;
   color: #4f5d56;
   font-weight: 700;
+  flex-wrap: wrap;
 }
 
 .progress-track {
@@ -195,6 +242,10 @@ button:disabled {
   grid-template-columns: minmax(260px, 0.9fr) minmax(340px, 1.1fr);
   gap: 18px;
   align-items: start;
+}
+
+.session-details {
+  margin-bottom: 18px;
 }
 
 .chat-log,
@@ -320,7 +371,7 @@ button:disabled {
 }
 
 .confidence-badges {
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
 }
 
 .confidence-badges article,
@@ -427,9 +478,19 @@ dd {
   .session-header,
   .results-header,
   .progress-meta,
-  .results-actions {
+  .results-actions,
+  .setup-primary {
     align-items: start;
     flex-direction: column;
+  }
+
+  .setup-actions {
+    width: 100%;
+    justify-items: stretch;
+  }
+
+  .setup-actions .response-caption {
+    text-align: left;
   }
 
   .chat-log {

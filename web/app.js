@@ -2,13 +2,21 @@ const startBtn = document.querySelector("#startBtn");
 const restartBtn = document.querySelector("#restartBtn");
 const newSessionBtn = document.querySelector("#newSessionBtn");
 const exportBtn = document.querySelector("#exportBtn");
+const paramModeInput = document.querySelector("#paramMode");
 const modelInput = document.querySelector("#model");
 const maxItemsInput = document.querySelector("#maxItems");
+const minItemsInput = document.querySelector("#minItems");
+const coverageMinInput = document.querySelector("#coverageMin");
+const stopStabilityScoreInput = document.querySelector("#stopStabilityScore");
 const setupStage = document.querySelector("#setupStage");
 const setupPanel = document.querySelector("#setupPanel");
+const setupSummary = document.querySelector("#setupSummary");
+const advancedPanel = document.querySelector("#advancedPanel");
 const sessionStage = document.querySelector("#sessionStage");
 const questionArea = document.querySelector("#questionArea");
 const sessionTitle = document.querySelector("#sessionTitle");
+const sessionDetails = document.querySelector("#sessionDetails");
+const sessionConfigLabel = document.querySelector("#sessionConfigLabel");
 const progressLabel = document.querySelector("#progressLabel");
 const progressHint = document.querySelector("#progressHint");
 const progressBar = document.querySelector("#progressBar");
@@ -27,6 +35,8 @@ const confidenceTitle = document.querySelector("#confidenceTitle");
 const confidenceCopy = document.querySelector("#confidenceCopy");
 const meanStandardError = document.querySelector("#meanStandardError");
 const confidenceReady = document.querySelector("#confidenceReady");
+const stabilityScore = document.querySelector("#stabilityScore");
+const stabilityStage = document.querySelector("#stabilityStage");
 const confidenceGrid = document.querySelector("#confidenceGrid");
 const interpretationOverview = document.querySelector("#interpretationOverview");
 const interpretationRange = document.querySelector("#interpretationRange");
@@ -36,6 +46,7 @@ const cautionList = document.querySelector("#cautionList");
 const coverageGrid = document.querySelector("#coverageGrid");
 const irtScores = document.querySelector("#irtScores");
 const classicalScores = document.querySelector("#classicalScores");
+const experimentDetails = document.querySelector("#experimentDetails");
 
 let sessionId = null;
 let currentQuestion = null;
@@ -49,10 +60,28 @@ const responseLabels = {
   5: "5 Very accurate",
 };
 
+const evidenceStageCopy = {
+  "building minimum evidence": "Building minimum evidence",
+  "coverage in progress": "Coverage in progress",
+  "early confidence screening": "Early confidence screening",
+  "confidence refining": "Confidence refining",
+  "stability refining": "Stability refining",
+  "confidence target reached": "Confidence target reached",
+  "screening plateau reached": "Screening plateau reached",
+  "item cap reached": "Item cap reached",
+  "item bank exhausted": "Item bank exhausted",
+};
+
 startBtn.addEventListener("click", startSession);
 restartBtn.addEventListener("click", restartSession);
 newSessionBtn.addEventListener("click", resetApp);
 exportBtn.addEventListener("click", exportSession);
+paramModeInput.addEventListener("change", renderSetupSummary);
+modelInput.addEventListener("change", renderSetupSummary);
+maxItemsInput.addEventListener("input", renderSetupSummary);
+minItemsInput.addEventListener("input", renderSetupSummary);
+coverageMinInput.addEventListener("input", renderSetupSummary);
+  stopStabilityScoreInput.addEventListener("input", renderSetupSummary);
 
 function resetApp() {
   sessionId = null;
@@ -63,6 +92,11 @@ function resetApp() {
   sessionStage.hidden = true;
   resultsEl.hidden = true;
   questionArea.hidden = false;
+  advancedPanel.open = false;
+  sessionDetails.open = false;
+  experimentDetails.open = false;
+  sessionConfigLabel.textContent = "";
+  setupSummary.textContent = "";
   questionText.textContent = "";
   responsesEl.innerHTML = "";
   chatLog.innerHTML = "";
@@ -71,6 +105,8 @@ function resetApp() {
   confidenceCopy.textContent = "";
   meanStandardError.textContent = "";
   confidenceReady.textContent = "";
+  stabilityScore.textContent = "";
+  stabilityStage.textContent = "";
   confidenceGrid.innerHTML = "";
   irtScores.innerHTML = "";
   classicalScores.innerHTML = "";
@@ -86,22 +122,30 @@ function resetApp() {
   highlightList.innerHTML = "";
   lowlightList.innerHTML = "";
   cautionList.innerHTML = "";
-  updateProgress({ answered: 0, max_items: Number(maxItemsInput.value), remaining: Number(maxItemsInput.value), complete: false });
+  updateProgress(
+    { answered: 0, max_items: Number(maxItemsInput.value), remaining: Number(maxItemsInput.value), complete: false },
+    null
+  );
+  renderSetupSummary();
 }
 
 async function startSession() {
   startBtn.disabled = true;
   try {
     const maxItems = Number(maxItemsInput.value);
+    const minItems = Number(minItemsInput.value);
+    const coverageMin = Number(coverageMinInput.value);
+    const stopStabilityScore = Number(stopStabilityScoreInput.value);
     const response = await fetch("/sessions", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         scoring_model: modelInput.value,
         max_items: maxItems,
-        min_items: Math.min(8, maxItems),
-        param_mode: "legacy",
-        coverage_min_per_dimension: 2,
+        min_items: Math.min(minItems, maxItems),
+        param_mode: paramModeInput.value,
+        coverage_min_per_dimension: coverageMin,
+        stop_stability_score: stopStabilityScore,
       }),
     });
     const payload = await response.json();
@@ -115,6 +159,7 @@ async function startSession() {
     setupPanel.hidden = true;
     resultsEl.hidden = true;
     sessionStage.hidden = false;
+    renderSessionConfig(payload);
     renderQuestion(payload.next_question);
   } catch (error) {
     window.alert(error.message);
@@ -142,6 +187,7 @@ async function restartSession() {
     appendBubble("system", "Session restarted. You are back at the first routed item.");
     resultsEl.hidden = true;
     sessionStage.hidden = false;
+    renderSessionConfig(payload);
     renderQuestion(payload.next_question);
   } catch (error) {
     window.alert(error.message);
@@ -159,8 +205,8 @@ function renderQuestion(question) {
   }
 
   questionArea.hidden = false;
-  updateProgress(question.progress);
-  sessionTitle.textContent = `Question ${question.progress.answered + 1}`;
+  updateProgress(question.progress, question.progress_estimate);
+  sessionTitle.textContent = `Adaptive check-in | prompt ${question.progress.answered + 1}`;
   questionText.textContent = question.text;
   appendBubble("system", question.text);
 
@@ -222,10 +268,11 @@ async function loadResults() {
 
   sessionStage.hidden = true;
   resultsEl.hidden = false;
-  renderResultProgress(result.progress);
+  renderResultProgress(result.progress, result.progress_estimate);
   resultNotice.textContent = result.disclaimer;
+  renderSessionConfig(result);
   renderExperimentContext(result);
-  renderConfidence(result.progress, result.standard_errors, result.uncertainty);
+  renderConfidence(result.progress, result.progress_estimate, result.standard_errors, result.uncertainty);
   renderInterpretation(result.interpretation);
   renderCoverage(result.dimension_answer_counts, result.progress.answered, result.progress.max_items);
   renderScores(irtScores, result.irt_t_scores);
@@ -248,9 +295,21 @@ function renderInterpretation(interpretation) {
   renderList(cautionList, interpretation.cautions);
 }
 
+function renderSetupSummary() {
+  const minItems = Math.min(Number(minItemsInput.value || 0), Number(maxItemsInput.value || 0));
+  const modeLabel = paramModeInput.value === "keyed" ? "adaptive 30-item target" : "fast estimate";
+  setupSummary.textContent =
+    `Recommended ${modeLabel} | evidence floor ${minItems} | coverage ${coverageMinInput.value} | smart precision 0.85 → 0.65 | stability ${Number(stopStabilityScoreInput.value).toFixed(2)}`;
+}
+
+function renderSessionConfig(payload) {
+  sessionConfigLabel.textContent =
+    `Mode ${payload.param_mode} | model ${payload.scoring_model} | evidence floor ${payload.min_items} | coverage ${payload.coverage_min_per_dimension} | smart precision ${Number(payload.progress?.screening_stop_mean_standard_error ?? 0.85).toFixed(2)} → ${Number(payload.stop_mean_standard_error).toFixed(2)} after item ${payload.progress?.refinement_item_trigger ?? 15} | stop stability ${Number(payload.stop_stability_score).toFixed(2)} | hard cap ${payload.max_items}`;
+}
+
 function renderExperimentContext(result) {
   const mode = result.param_mode || "custom";
-  paramModeLabel.textContent = `${mode}${result.key_aligned ? " | key-aligned" : " | response-flip mode"}`;
+  paramModeLabel.textContent = `${mode}${result.key_aligned ? " | parameter-aligned" : " | runtime reverse-key handling"}`;
   paramPathLabel.textContent = result.param_path || "No parameter file recorded";
   paramMetaLabel.textContent = `generator ${result.param_metadata?.generator || "unknown"} | seed ${result.param_metadata?.seed ?? "n/a"}`;
 
@@ -265,10 +324,26 @@ function renderExperimentContext(result) {
   } else {
     stopReasons.push(`Coverage floor not met yet: target ${result.progress.coverage_min_per_dimension} item(s) per trait.`);
   }
-  if (result.progress.standard_error_ready) {
-    stopReasons.push(`Mean standard error reached the ${Number(result.progress.stop_mean_standard_error).toFixed(2)} threshold.`);
+  if (result.progress.screening_threshold_ready) {
+    stopReasons.push(`Early screening passed the ${Number(result.progress.screening_stop_mean_standard_error).toFixed(2)} threshold.`);
   } else {
-    stopReasons.push(`Mean standard error is still above the ${Number(result.progress.stop_mean_standard_error).toFixed(2)} threshold.`);
+    stopReasons.push(`Early screening is still above ${Number(result.progress.screening_stop_mean_standard_error).toFixed(2)}.`);
+  }
+  if (result.progress.precision_mode === "refining") {
+    if (result.progress.standard_error_ready) {
+      stopReasons.push(`Refinement reached the active ${Number(result.progress.effective_stop_mean_standard_error).toFixed(2)} threshold.`);
+    } else {
+      stopReasons.push(`Refinement is still above the active ${Number(result.progress.effective_stop_mean_standard_error).toFixed(2)} threshold.`);
+    }
+  } else if (result.progress.stopped_by === "screening_plateau") {
+    stopReasons.push(
+      `The session passed item ${result.progress.refinement_item_trigger} without clearing the early ${Number(result.progress.screening_stop_mean_standard_error).toFixed(2)} screen, so it wrapped at the screening stage.`
+    );
+  }
+  if (result.progress.stability_ready) {
+    stopReasons.push(`Response stability reached the ${Number(result.progress.stop_stability_score).toFixed(2)} threshold.`);
+  } else {
+    stopReasons.push(`Response stability is still below the ${Number(result.progress.stop_stability_score).toFixed(2)} threshold.`);
   }
   stopReasonLabel.textContent = `Current stop state: ${String(result.progress.stopped_by).replaceAll("_", " ")}.`;
   renderList(stopReasonList, stopReasons);
@@ -281,44 +356,65 @@ function exportSession() {
   window.open(`/sessions/${sessionId}/export`, "_blank", "noopener");
 }
 
-function updateProgress(progress) {
+function updateProgress(progress, progressEstimate) {
   const answered = progress.answered;
-  const maxItems = progress.max_items;
-  const percent = maxItems > 0 ? (answered / maxItems) * 100 : 0;
-  progressLabel.textContent = `${answered} / ${maxItems} answered`;
+  const maxItems = progressEstimate?.estimated_total_items ?? progress.max_items;
+  const displayAnswered = progressEstimate?.display_answered ?? (progress.complete ? answered : answered + 1);
+  const percent = progressEstimate?.estimated_completion_percent ?? (maxItems > 0 ? (displayAnswered / maxItems) * 100 : 0);
+  progressLabel.textContent = `${displayAnswered} / ${maxItems} estimated | ${percent}%`;
   if (progress.complete) {
-    progressHint.textContent = `Assessment complete | mean SE ${Number(progress.mean_standard_error ?? 0).toFixed(2)}`;
-  } else {
     progressHint.textContent =
-      `${progress.remaining} item${progress.remaining === 1 ? "" : "s"} remaining | mean SE ${Number(progress.mean_standard_error ?? 0).toFixed(2)}`;
+      `${progressEstimate?.confidence_profile || "session complete"} | ${evidenceStageCopy[progressEstimate?.evidence_stage] || "Assessment complete"} | stability ${progress.stability_stage || "mixed"} | mean SE ${Number(progress.mean_standard_error ?? 0).toFixed(2)}`;
+  } else {
+    const estimateLabel = progressEstimate?.estimate_source === "lookup_table" ? "Estimated path" : "Custom path";
+    progressHint.textContent =
+      `${estimateLabel} | ${evidenceStageCopy[progressEstimate?.evidence_stage] || "Adaptive routing is active"} | stability ${progress.stability_stage || "mixed"} | mean SE ${Number(progress.mean_standard_error ?? 0).toFixed(2)}`;
   }
   progressBar.style.width = `${percent}%`;
 }
 
-function renderConfidence(progress, standardErrors, uncertainty) {
+function renderConfidence(progress, progressEstimate, standardErrors, uncertainty) {
   meanStandardError.textContent = Number(uncertainty.mean_standard_error).toFixed(2);
-  confidenceReady.textContent = uncertainty.confidence_ready ? "Yes" : "No";
+  confidenceReady.textContent = progress.standard_error_ready ? "Yes" : "No";
+  stabilityScore.textContent = Number(progress.stability_score ?? 0).toFixed(2);
+  stabilityStage.textContent = String(progress.stability_stage || "mixed");
 
   if (progress.stopped_by === "max_items_cap") {
     confidenceTitle.textContent = "Stopped at the item cap";
     confidenceCopy.textContent =
       `The session reached the ${progress.max_items}-item cap before the current stop rule was satisfied. Mean standard error finished at ${Number(uncertainty.mean_standard_error).toFixed(2)}.`;
+  } else if (progress.stopped_by === "screening_plateau") {
+    confidenceTitle.textContent = "Wrapped at the screening stage";
+    confidenceCopy.textContent =
+      `The session moved past item ${progress.refinement_item_trigger} without clearing the early ${Number(progress.screening_stop_mean_standard_error).toFixed(2)} screen, so it stopped instead of chasing the stricter refinement target. Mean standard error finished at ${Number(uncertainty.mean_standard_error).toFixed(2)}.`;
   } else if (progress.stopped_by === "item_bank_exhausted") {
     confidenceTitle.textContent = "Item bank exhausted";
     confidenceCopy.textContent =
       `The routed item pool ran out before another prompt could improve certainty. Mean standard error finished at ${Number(uncertainty.mean_standard_error).toFixed(2)}.`;
-  } else if (progress.stopped_by === "standard_error_threshold") {
+  } else if (progress.stopped_by === "screening_threshold") {
+    confidenceTitle.textContent = "Early confidence screen passed";
+    confidenceCopy.textContent =
+      `The session stopped before item ${progress.refinement_item_trigger} because the early ${Number(progress.screening_stop_mean_standard_error).toFixed(2)} screen and the current stability rule were both satisfied. Mean standard error is ${Number(uncertainty.mean_standard_error).toFixed(2)}.`;
+  } else if (progress.stopped_by === "stability_threshold") {
     confidenceTitle.textContent = "Confidence threshold reached";
     confidenceCopy.textContent =
-      `The session stopped before the ${progress.max_items}-item cap because the current confidence rule was satisfied. Mean standard error is ${Number(uncertainty.mean_standard_error).toFixed(2)} across tracked traits.`;
+      `The session moved past the early screen and stopped near the ${progressEstimate?.estimated_total_items ?? progress.max_items}-item estimate because the tighter ${Number(progress.effective_stop_mean_standard_error).toFixed(2)} refinement target and the stability rule were both satisfied. Mean standard error is ${Number(uncertainty.mean_standard_error).toFixed(2)} and the response pattern is ${String(progress.stability_stage || "stable")}.`;
   } else if (progress.answered < progress.min_items) {
     confidenceTitle.textContent = "Still collecting minimum evidence";
     confidenceCopy.textContent =
       `The engine is still inside the minimum item window (${progress.answered}/${progress.min_items}). Early stopping is disabled until that floor is met.`;
+  } else if (progress.stopped_by === "screening_gate") {
+    confidenceTitle.textContent = "Still clearing the early screen";
+    confidenceCopy.textContent =
+      `The engine is still trying to clear the early ${Number(progress.screening_stop_mean_standard_error).toFixed(2)} confidence screen before it decides whether a shorter session is enough.`;
+  } else if (progress.stopped_by === "stability_gate") {
+    confidenceTitle.textContent = "Checking for a stable pattern";
+    confidenceCopy.textContent =
+      `Coverage and precision are close, but the response pattern is still ${String(progress.stability_stage || "mixed")}. The engine keeps routing more items to confirm whether the signal settles down.`;
   } else {
     confidenceTitle.textContent = "More evidence still needed";
     confidenceCopy.textContent =
-      `The session has not yet met the stopping rule. Mean standard error is ${Number(uncertainty.mean_standard_error).toFixed(2)}, so the engine keeps routing more items while evidence improves.`;
+      `The session has not yet met the stopping rule. Mean standard error is ${Number(uncertainty.mean_standard_error).toFixed(2)} and response stability is ${Number(progress.stability_score ?? 0).toFixed(2)}, so the engine keeps routing more items while evidence improves.`;
   }
 
   confidenceGrid.innerHTML = "";
@@ -338,15 +434,14 @@ function renderConfidence(progress, standardErrors, uncertainty) {
   }
 }
 
-function renderResultProgress(progress) {
-  if (progress.answered < progress.max_items) {
-    resultProgress.textContent = `Stopped after ${progress.answered} answered items before the ${progress.max_items}-item cap.`;
-    return;
-  }
-  resultProgress.textContent = `Reached the ${progress.max_items}-item cap.`;
+function renderResultProgress(progress, progressEstimate) {
+  const estimated = progressEstimate?.estimated_total_items ?? progress.max_items;
+  const source = progressEstimate?.estimate_source === "lookup_table" ? "estimated path" : "custom path";
+  resultProgress.textContent =
+    `Answered ${progress.answered} items | estimated total ${estimated} (${source}) | stability ${progress.stability_stage || "mixed"} | stop state ${String(progress.stopped_by).replaceAll("_", " ")}.`;
 }
 
-function renderCoverage(counts, answeredItems, maxItems) {
+function renderCoverage(counts, answeredItems) {
   coverageGrid.innerHTML = "";
   for (const [trait, count] of Object.entries(counts)) {
     const article = document.createElement("article");
@@ -358,7 +453,7 @@ function renderCoverage(counts, answeredItems, maxItems) {
     caption.className = "metric-caption";
     name.textContent = trait;
     value.textContent = String(count);
-    caption.textContent = `${count} of ${answeredItems} answered items | cap ${maxItems}`;
+    caption.textContent = `${count} of ${answeredItems} answered items`;
     article.append(name, value, caption);
     coverageGrid.appendChild(article);
   }

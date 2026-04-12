@@ -1,0 +1,53 @@
+{
+  "version": "2026-04-13-progress-estimate-v1",
+  "records": [
+    {
+      "param_mode": "legacy",
+      "scoring_model": "binary_2pl",
+      "coverage_min_per_dimension": 2,
+      "stop_mean_standard_error": 0.85,
+      "estimated_total_items": 10,
+      "confidence_profile": "fast confidence"
+    },
+    {
+      "param_mode": "legacy",
+      "scoring_model": "binary_2pl",
+      "coverage_min_per_dimension": 2,
+      "stop_mean_standard_error": 0.65,
+      "estimated_total_items": 13,
+      "confidence_profile": "balanced confidence"
+    },
+    {
+      "param_mode": "legacy",
+      "scoring_model": "binary_2pl",
+      "coverage_min_per_dimension": 3,
+      "stop_mean_standard_error": 0.65,
+      "estimated_total_items": 15,
+      "confidence_profile": "deep coverage"
+    },
+    {
+      "param_mode": "keyed",
+      "scoring_model": "binary_2pl",
+      "coverage_min_per_dimension": 2,
+      "stop_mean_standard_error": 0.85,
+      "estimated_total_items": 15,
+      "confidence_profile": "careful confidence"
+    },
+    {
+      "param_mode": "keyed",
+      "scoring_model": "binary_2pl",
+      "coverage_min_per_dimension": 2,
+      "stop_mean_standard_error": 0.65,
+      "estimated_total_items": 27,
+      "confidence_profile": "deep confidence"
+    },
+    {
+      "param_mode": "keyed",
+      "scoring_model": "binary_2pl",
+      "coverage_min_per_dimension": 3,
+      "stop_mean_standard_error": 0.65,
+      "estimated_total_items": 27,
+      "confidence_profile": "deep coverage"
+    }
+  ]
+}

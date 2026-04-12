@@ -3,7 +3,7 @@ from __future__ import annotations
 from pathlib import Path
 
 
-DEFAULT_PARAM_MODE = "legacy"
+DEFAULT_PARAM_MODE = "keyed"
 PARAM_MODE_FILES = {
     "legacy": "mock_params.pt",
     "keyed": "mock_params_keyed.pt",

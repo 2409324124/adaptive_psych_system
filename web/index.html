@@ -26,19 +26,58 @@
       </section>
 
       <section class="stage stage--setup" id="setupPanel">
-        <div class="config-row">
-          <label>
-            Model
-            <select id="model">
-              <option value="binary_2pl">binary_2pl</option>
-              <option value="grm">grm</option>
-            </select>
-          </label>
-          <label>
-            Items
-            <input id="maxItems" type="number" min="1" max="50" value="12" />
-          </label>
-          <button id="startBtn" type="button">Start assessment</button>
+        <div class="setup-card">
+          <div class="setup-primary">
+            <div>
+              <p class="eyebrow">Ready</p>
+              <h2>Start a short adaptive session</h2>
+              <p class="lead">
+                The system begins with a short path and keeps estimating how many prompts are still worth asking as evidence improves.
+              </p>
+            </div>
+            <div class="setup-actions">
+              <p class="response-caption" id="setupSummary"></p>
+              <button id="startBtn" type="button">Start assessment</button>
+            </div>
+          </div>
+          <details class="advanced-panel" id="advancedPanel">
+            <summary>Advanced experiment settings</summary>
+            <p class="response-caption">
+              These settings only affect a new session. They are useful for experiments and comparisons, but not required for the default experience.
+            </p>
+            <div class="config-row">
+              <label>
+                Parameter mode
+                <select id="paramMode">
+                  <option value="keyed">keyed</option>
+                  <option value="legacy">legacy</option>
+                </select>
+              </label>
+              <label>
+                Model
+                <select id="model">
+                  <option value="binary_2pl">binary_2pl</option>
+                  <option value="grm">grm</option>
+                </select>
+              </label>
+              <label>
+                Item cap
+                <input id="maxItems" type="number" min="1" max="50" value="30" />
+              </label>
+              <label>
+                Min items
+                <input id="minItems" type="number" min="1" max="50" value="5" />
+              </label>
+              <label>
+                Coverage floor
+                <input id="coverageMin" type="number" min="0" max="10" value="2" />
+              </label>
+              <label>
+                Stop stability
+                <input id="stopStabilityScore" type="number" min="0" max="1" step="0.05" value="0.7" />
+              </label>
+            </div>
+          </details>
         </div>
       </section>
 
@@ -46,7 +85,7 @@
         <header class="session-header">
           <div>
             <p class="eyebrow">Live Session</p>
-            <h2 id="sessionTitle">Question 1</h2>
+            <h2 id="sessionTitle">Adaptive check-in in progress</h2>
           </div>
           <button id="restartBtn" class="secondary" type="button">Restart</button>
         </header>
@@ -60,6 +99,10 @@
             <div class="progress-bar" id="progressBar"></div>
           </div>
         </div>
+        <details class="session-details" id="sessionDetails">
+          <summary>Session details</summary>
+          <p class="response-caption" id="sessionConfigLabel"></p>
+        </details>
 
         <div class="chat-shell">
           <div class="chat-log" id="chatLog"></div>
@@ -85,45 +128,6 @@
           </div>
         </header>
         <p class="notice" id="resultNotice"></p>
-        <section class="interpretation-panel">
-          <h3>Experiment context</h3>
-          <div class="interpretation-grid">
-            <div>
-              <h4>Parameter mode</h4>
-              <p class="interpretation-overview" id="paramModeLabel"></p>
-              <p class="response-caption" id="paramPathLabel"></p>
-            </div>
-            <div>
-              <h4>Stop rule</h4>
-              <p class="interpretation-overview" id="stopReasonLabel"></p>
-              <ul id="stopReasonList"></ul>
-            </div>
-            <div>
-              <h4>Parameter metadata</h4>
-              <p class="interpretation-overview" id="paramMetaLabel"></p>
-            </div>
-          </div>
-        </section>
-        <section class="confidence-panel" id="confidencePanel">
-          <div class="confidence-summary">
-            <div>
-              <p class="eyebrow">Confidence</p>
-              <h3 id="confidenceTitle">Confidence summary</h3>
-              <p class="confidence-copy" id="confidenceCopy"></p>
-            </div>
-            <div class="confidence-badges">
-              <article>
-                <p class="metric-name">Mean standard error</p>
-                <p class="metric-value metric-value--small" id="meanStandardError">0.00</p>
-              </article>
-              <article>
-                <p class="metric-name">Confidence ready</p>
-                <p class="metric-value metric-value--small" id="confidenceReady">No</p>
-              </article>
-            </div>
-          </div>
-          <div class="confidence-grid" id="confidenceGrid"></div>
-        </section>
         <section class="interpretation-panel" id="interpretationPanel">
           <h3>Interpretation</h3>
           <p class="interpretation-overview" id="interpretationOverview"></p>
@@ -143,6 +147,34 @@
             </div>
           </div>
         </section>
+        <section class="confidence-panel" id="confidencePanel">
+          <div class="confidence-summary">
+            <div>
+              <p class="eyebrow">Confidence</p>
+              <h3 id="confidenceTitle">Confidence summary</h3>
+              <p class="confidence-copy" id="confidenceCopy"></p>
+            </div>
+            <div class="confidence-badges">
+              <article>
+                <p class="metric-name">Mean standard error</p>
+                <p class="metric-value metric-value--small" id="meanStandardError">0.00</p>
+              </article>
+              <article>
+                <p class="metric-name">Confidence ready</p>
+                <p class="metric-value metric-value--small" id="confidenceReady">No</p>
+              </article>
+              <article>
+                <p class="metric-name">Stability score</p>
+                <p class="metric-value metric-value--small" id="stabilityScore">0.00</p>
+              </article>
+              <article>
+                <p class="metric-name">Stability stage</p>
+                <p class="metric-value metric-value--small" id="stabilityStage">Mixed</p>
+              </article>
+            </div>
+          </div>
+          <div class="confidence-grid" id="confidenceGrid"></div>
+        </section>
         <div class="coverage-grid" id="coverageGrid"></div>
         <div class="score-grid">
           <div>
@@ -154,6 +186,25 @@
             <dl id="classicalScores"></dl>
           </div>
         </div>
+        <details class="experiment-details" id="experimentDetails">
+          <summary>Experiment details</summary>
+          <div class="interpretation-grid">
+            <div>
+              <h4>Parameter mode</h4>
+              <p class="interpretation-overview" id="paramModeLabel"></p>
+              <p class="response-caption" id="paramPathLabel"></p>
+            </div>
+            <div>
+              <h4>Stop rule</h4>
+              <p class="interpretation-overview" id="stopReasonLabel"></p>
+              <ul id="stopReasonList"></ul>
+            </div>
+            <div>
+              <h4>Parameter metadata</h4>
+              <p class="interpretation-overview" id="paramMetaLabel"></p>
+            </div>
+          </div>
+        </details>
       </section>
     </main>
     <script src="/static/app.js"></script>

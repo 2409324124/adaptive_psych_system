@@ -5,22 +5,28 @@ from datetime import UTC, datetime
 from uuid import uuid4
 
 from engine import AdaptiveMMPIRouter, ClassicalBigFiveScorer, resolve_param_source
+from services.progress_estimator import ProgressEstimator
 from services.result_interpreter import ResultInterpreter
+from services.stability_analyzer import StabilityAnalyzer
 
 
 DISCLAIMER = "\u672c\u7cfb\u7edf\u4ec5\u4f5c\u4e3a\u5fc3\u7406\u7279\u8d28\u7b5b\u67e5\u4e0e\u8f85\u52a9\u53c2\u8003\u5de5\u5177\uff0c\u7edd\u5bf9\u4e0d\u53ef\u66ff\u4ee3\u4e13\u4e1a\u7cbe\u795e\u79d1\u4e34\u5e8a\u8bca\u65ad\u3002"
+SCREENING_STOP_MEAN_STANDARD_ERROR = 0.85
+REFINEMENT_ITEM_TRIGGER = 15
+STABILITY_SE_RELAXATION = 0.1
 
 
 @dataclass
 class AssessmentSession:
     scoring_model: str = "binary_2pl"
-    max_items: int = 12
-    min_items: int = 8
+    max_items: int = 30
+    min_items: int = 5
     device: str | None = None
-    param_mode: str | None = None
+    param_mode: str | None = "keyed"
     param_path: str | None = None
     coverage_min_per_dimension: int = 2
-    stop_mean_standard_error: float = 0.85
+    stop_mean_standard_error: float = 0.65
+    stop_stability_score: float = 0.7
     session_id: str = field(default_factory=lambda: uuid4().hex)
     created_at: str = field(default_factory=lambda: datetime.now(UTC).isoformat())
     updated_at: str = field(default_factory=lambda: datetime.now(UTC).isoformat())
@@ -36,7 +42,9 @@ class AssessmentSession:
             coverage_min_per_dimension=self.coverage_min_per_dimension,
         )
         self.classical = ClassicalBigFiveScorer(item_path=self.router.item_path)
+        self.progress_estimator = ProgressEstimator()
         self.interpreter = ResultInterpreter()
+        self.stability_analyzer = StabilityAnalyzer()
         self.responses: dict[str, int] = {}
         self.path: list[dict[str, object]] = []
         self.active_item: dict[str, object] | None = None
@@ -60,32 +68,77 @@ class AssessmentSession:
             "param_metadata": dict(self.router.param_metadata),
         }
 
+    def stability(self) -> dict[str, object]:
+        return self.stability_analyzer.evaluate(
+            history=self.router.history,
+            path=self.path,
+            dimensions=self.router.dimensions,
+            stop_threshold=self.stop_stability_score,
+        )
+
     def _progress_state(self) -> dict[str, int | float | bool]:
         answered = self.answered_count
         uncertainty = self.router.uncertainty_summary()
         counts = self.router.dimension_answer_counts()
+        stability = self.stability()
         min_items_met = answered >= self.min_items
         coverage_ready = min(counts.values()) >= self.coverage_min_per_dimension
-        se_threshold_met = uncertainty["mean_standard_error"] <= self.stop_mean_standard_error
+        stability_ready = bool(stability["stability_ready"])
+        screening_stop_mean_standard_error = max(self.stop_mean_standard_error, SCREENING_STOP_MEAN_STANDARD_ERROR)
+        refined_stop_mean_standard_error = self.stop_mean_standard_error + (
+            STABILITY_SE_RELAXATION if stability_ready else 0.0
+        )
+        screening_threshold_met = uncertainty["mean_standard_error"] <= screening_stop_mean_standard_error
+        refinement_active = answered > REFINEMENT_ITEM_TRIGGER and screening_threshold_met
+        effective_stop_mean_standard_error = (
+            refined_stop_mean_standard_error if refinement_active else screening_stop_mean_standard_error
+        )
+        se_threshold_met = uncertainty["mean_standard_error"] <= effective_stop_mean_standard_error
 
         if answered >= self.max_items:
             complete = True
             stopped_by = "max_items_cap"
+            precision_mode = "item_cap"
         elif self.router.remaining_count <= 0:
             complete = True
             stopped_by = "item_bank_exhausted"
+            precision_mode = "item_bank_exhausted"
         elif not min_items_met:
             complete = False
             stopped_by = "min_items_gate"
+            precision_mode = "minimum_evidence"
         elif not coverage_ready:
             complete = False
             stopped_by = "coverage_gate"
-        elif se_threshold_met:
+            precision_mode = "coverage"
+        elif answered > REFINEMENT_ITEM_TRIGGER and not screening_threshold_met:
             complete = True
-            stopped_by = "standard_error_threshold"
-        else:
+            stopped_by = "screening_plateau"
+            precision_mode = "screening_plateau"
+        elif not screening_threshold_met:
+            complete = False
+            stopped_by = "screening_gate"
+            precision_mode = "screening"
+        elif answered <= REFINEMENT_ITEM_TRIGGER:
+            if stability_ready:
+                complete = True
+                stopped_by = "screening_threshold"
+            else:
+                complete = False
+                stopped_by = "stability_gate"
+            precision_mode = "screening"
+        elif not se_threshold_met:
             complete = False
             stopped_by = "standard_error_gate"
+            precision_mode = "refining"
+        elif not stability_ready:
+            complete = False
+            stopped_by = "stability_gate"
+            precision_mode = "refining"
+        else:
+            complete = True
+            stopped_by = "stability_threshold"
+            precision_mode = "refining"
 
         return {
             "answered": answered,
@@ -93,18 +146,44 @@ class AssessmentSession:
             "max_items": self.max_items,
             "remaining": max(0, self.max_items - answered),
             "mean_standard_error": uncertainty["mean_standard_error"],
-            "confidence_ready": uncertainty["confidence_ready"],
+            "confidence_ready": se_threshold_met,
             "coverage_min_per_dimension": self.coverage_min_per_dimension,
             "stop_mean_standard_error": self.stop_mean_standard_error,
+            "screening_stop_mean_standard_error": screening_stop_mean_standard_error,
+            "refinement_item_trigger": REFINEMENT_ITEM_TRIGGER,
+            "screening_threshold_ready": screening_threshold_met,
+            "effective_stop_mean_standard_error": effective_stop_mean_standard_error,
+            "stop_stability_score": self.stop_stability_score,
             "min_items_met": min_items_met,
             "coverage_ready": coverage_ready,
             "standard_error_ready": se_threshold_met,
+            "stability_ready": stability_ready,
+            "stability_score": float(stability["stability_score"]),
+            "stability_stage": str(stability["stability_stage"]),
+            "precision_mode": precision_mode,
             "stopped_by": stopped_by,
             "complete": complete,
         }
 
     def progress(self) -> dict[str, int | float | bool | str]:
         return self._progress_state()
+
+    def progress_estimate(self) -> dict[str, object]:
+        progress = self.progress()
+        return self.progress_estimator.estimate(
+            param_mode=str(self.param_mode),
+            scoring_model=self.scoring_model,
+            coverage_min_per_dimension=self.coverage_min_per_dimension,
+            stop_mean_standard_error=self.stop_mean_standard_error,
+            answered=int(progress["answered"]),
+            max_items=self.max_items,
+            complete=bool(progress["complete"]),
+            min_items_met=bool(progress["min_items_met"]),
+            coverage_ready=bool(progress["coverage_ready"]),
+            standard_error_ready=bool(progress["standard_error_ready"]),
+            stability_ready=bool(progress["stability_ready"]),
+            stopped_by=str(progress["stopped_by"]),
+        )
 
     def next_question(self) -> dict[str, object] | None:
         self.touch()
@@ -113,6 +192,7 @@ class AssessmentSession:
             return None
         if self.active_item is not None:
             self.active_item["progress"] = self.progress()
+            self.active_item["progress_estimate"] = self.progress_estimate()
             return self.active_item
         item = self.router.select_next_item()
         if item is None:
@@ -126,6 +206,7 @@ class AssessmentSession:
             "key": item["key"],
             "response_scale": item["response_scale"],
             "progress": self.progress(),
+            "progress_estimate": self.progress_estimate(),
         }
         return self.active_item
 
@@ -158,6 +239,7 @@ class AssessmentSession:
             "session_id": self.session_id,
             "accepted": True,
             "progress": self.progress(),
+            "progress_estimate": self.progress_estimate(),
             "complete": self.is_complete,
         }
 
@@ -178,9 +260,12 @@ class AssessmentSession:
             "min_items": self.min_items,
             "coverage_min_per_dimension": self.coverage_min_per_dimension,
             "stop_mean_standard_error": self.stop_mean_standard_error,
+            "stop_stability_score": self.stop_stability_score,
             "device": self.device,
             **self.parameter_summary(),
             "progress": self.progress(),
+            "progress_estimate": self.progress_estimate(),
+            "stability": self.stability(),
         }
 
     def snapshot(self) -> dict[str, object]:
@@ -196,6 +281,7 @@ class AssessmentSession:
         dimension_answer_counts = self.router.dimension_answer_counts()
         standard_errors = self.router.standard_errors()
         uncertainty = self.router.uncertainty_summary()
+        stability = self.stability()
         return {
             **self.summary(),
             "disclaimer": DISCLAIMER,
@@ -203,6 +289,7 @@ class AssessmentSession:
             "irt_t_scores": irt_t_scores,
             "standard_errors": standard_errors,
             "uncertainty": uncertainty,
+            "stability": stability,
             "classical_big5": self.classical.score(self.responses),
             "dimension_answer_counts": dimension_answer_counts,
             "interpretation": self.interpreter.interpret(
@@ -217,12 +304,13 @@ class AssessmentSession:
         session = cls(
             scoring_model=str(payload["scoring_model"]),
             max_items=int(payload["max_items"]),
-            min_items=int(payload.get("min_items", 8)),
+            min_items=int(payload.get("min_items", 5)),
             device=payload.get("device"),
-            param_mode=payload.get("param_mode"),
+            param_mode=payload.get("param_mode", "keyed"),
             param_path=payload.get("param_path"),
             coverage_min_per_dimension=int(payload.get("coverage_min_per_dimension", 2)),
-            stop_mean_standard_error=float(payload.get("stop_mean_standard_error", 0.85)),
+            stop_mean_standard_error=float(payload.get("stop_mean_standard_error", 0.65)),
+            stop_stability_score=float(payload.get("stop_stability_score", 0.7)),
             session_id=str(payload["session_id"]),
             created_at=str(payload.get("created_at") or datetime.now(UTC).isoformat()),
             updated_at=str(payload.get("updated_at") or datetime.now(UTC).isoformat()),

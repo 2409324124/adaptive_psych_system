@@ -18,8 +18,9 @@ from engine.math_utils import (
 )
 from scripts.benchmark_stopping_rules import DEFAULT_CONFIGS, run_benchmark
 from scripts.compare_param_modes import build_comparison
-from scripts.simulate_adaptive_sessions import PERSONAS, run_matrix
+from scripts.simulate_adaptive_sessions import PERSONAS, RESPONSE_STYLES, run_matrix, run_session
 from scripts.run_cli_assessment import parse_demo_responses, run_assessment
+from services.stability_analyzer import StabilityAnalyzer
 
 
 def test_likert_to_binary_rules() -> None:
@@ -242,6 +243,96 @@ def test_standard_errors_are_finite_after_updates() -> None:
     assert uncertainty["max_standard_error"] > 0.0
 
 
+def test_stability_analyzer_rates_stable_sequence_higher_than_wavering() -> None:
+    analyzer = StabilityAnalyzer()
+    stable_path = [
+        {"dimension": "extraversion", "response": 5, "keyed_response": 5},
+        {"dimension": "extraversion", "response": 4, "keyed_response": 4},
+        {"dimension": "agreeableness", "response": 5, "keyed_response": 5},
+        {"dimension": "agreeableness", "response": 4, "keyed_response": 4},
+    ]
+    stable_history = [
+        {"theta_before": [0.0, 0.0], "theta_after": [0.12, 0.05]},
+        {"theta_before": [0.12, 0.05], "theta_after": [0.18, 0.08]},
+        {"theta_before": [0.18, 0.08], "theta_after": [0.22, 0.1]},
+        {"theta_before": [0.22, 0.1], "theta_after": [0.25, 0.12]},
+    ]
+    wavering_path = [
+        {"dimension": "extraversion", "response": 5, "keyed_response": 5},
+        {"dimension": "extraversion", "response": 1, "keyed_response": 1},
+        {"dimension": "agreeableness", "response": 3, "keyed_response": 3},
+        {"dimension": "agreeableness", "response": 5, "keyed_response": 5},
+    ]
+    wavering_history = [
+        {"theta_before": [0.0, 0.0], "theta_after": [0.3, 0.15]},
+        {"theta_before": [0.3, 0.15], "theta_after": [-0.05, 0.12]},
+        {"theta_before": [-0.05, 0.12], "theta_after": [0.1, -0.08]},
+        {"theta_before": [0.1, -0.08], "theta_after": [-0.02, 0.2]},
+    ]
+
+    stable = analyzer.evaluate(history=stable_history, path=stable_path, dimensions=["extraversion", "agreeableness"], stop_threshold=0.7)
+    wavering = analyzer.evaluate(history=wavering_history, path=wavering_path, dimensions=["extraversion", "agreeableness"], stop_threshold=0.7)
+
+    assert stable["stability_score"] > wavering["stability_score"]
+
+
+def test_stability_analyzer_penalizes_neutral_heavy_responses() -> None:
+    analyzer = StabilityAnalyzer()
+    neutral = analyzer.evaluate(
+        history=[
+            {"theta_before": [0.0], "theta_after": [0.05]},
+            {"theta_before": [0.05], "theta_after": [0.08]},
+            {"theta_before": [0.08], "theta_after": [0.1]},
+        ],
+        path=[
+            {"dimension": "intellect", "response": 3, "keyed_response": 3},
+            {"dimension": "intellect", "response": 3, "keyed_response": 3},
+            {"dimension": "intellect", "response": 4, "keyed_response": 4},
+        ],
+        dimensions=["intellect"],
+        stop_threshold=0.7,
+    )
+    decisive = analyzer.evaluate(
+        history=[
+            {"theta_before": [0.0], "theta_after": [0.05]},
+            {"theta_before": [0.05], "theta_after": [0.08]},
+            {"theta_before": [0.08], "theta_after": [0.1]},
+        ],
+        path=[
+            {"dimension": "intellect", "response": 5, "keyed_response": 5},
+            {"dimension": "intellect", "response": 4, "keyed_response": 4},
+            {"dimension": "intellect", "response": 5, "keyed_response": 5},
+        ],
+        dimensions=["intellect"],
+        stop_threshold=0.7,
+    )
+    assert decisive["stability_score"] > neutral["stability_score"]
+
+
+def test_stability_analyzer_does_not_mark_all_neutral_sequence_as_stable() -> None:
+    analyzer = StabilityAnalyzer()
+    all_neutral = analyzer.evaluate(
+        history=[
+            {"theta_before": [0.0], "theta_after": [0.0]},
+            {"theta_before": [0.0], "theta_after": [0.0]},
+            {"theta_before": [0.0], "theta_after": [0.0]},
+            {"theta_before": [0.0], "theta_after": [0.0]},
+        ],
+        path=[
+            {"dimension": "intellect", "response": 3, "keyed_response": 3},
+            {"dimension": "intellect", "response": 3, "keyed_response": 3},
+            {"dimension": "agreeableness", "response": 3, "keyed_response": 3},
+            {"dimension": "agreeableness", "response": 3, "keyed_response": 3},
+        ],
+        dimensions=["intellect", "agreeableness"],
+        stop_threshold=0.7,
+    )
+
+    assert all_neutral["stability_score"] <= 0.45
+    assert all_neutral["stability_ready"] is False
+    assert all_neutral["stability_stage"] != "stable"
+
+
 def test_lower_response_weight_produces_smaller_theta_shift() -> None:
     first_router = AdaptiveMMPIRouter(device="cpu", scoring_model="binary_2pl")
     second_router = AdaptiveMMPIRouter(device="cpu", scoring_model="binary_2pl")
@@ -287,7 +378,89 @@ def test_simulation_matrix_runs_both_scoring_models() -> None:
     assert all(len(session["path"]) == 3 for session in sessions["sessions"])
     assert all("classical_big5" in session for session in sessions["sessions"])
     assert all("irt_t_scores" in session for session in sessions["sessions"])
+    assert all("stability_score" in session for session in sessions["sessions"])
     assert all("tendency_t_scores" not in session for session in sessions["sessions"])
+    assert sessions["seed"] == 20260413
+
+
+def test_simulation_seed_is_deterministic() -> None:
+    first = run_session(
+        persona=PERSONAS[0],
+        scoring_model="binary_2pl",
+        max_items=8,
+        device="cpu",
+        param_mode="keyed",
+        param_path=None,
+        response_style="wavering",
+        seed=20260413,
+    )
+    second = run_session(
+        persona=PERSONAS[0],
+        scoring_model="binary_2pl",
+        max_items=8,
+        device="cpu",
+        param_mode="keyed",
+        param_path=None,
+        response_style="wavering",
+        seed=20260413,
+    )
+
+    assert first["style_seed"] == second["style_seed"]
+    assert first["path"] == second["path"]
+
+
+def test_different_response_styles_change_response_patterns() -> None:
+    stable = run_session(
+        persona=PERSONAS[0],
+        scoring_model="binary_2pl",
+        max_items=10,
+        device="cpu",
+        param_mode="keyed",
+        param_path=None,
+        response_style="stable",
+        seed=20260413,
+    )
+    wavering = run_session(
+        persona=PERSONAS[0],
+        scoring_model="binary_2pl",
+        max_items=10,
+        device="cpu",
+        param_mode="keyed",
+        param_path=None,
+        response_style="wavering",
+        seed=20260413,
+    )
+
+    stable_responses = [step["response"] for step in stable["path"]]
+    wavering_responses = [step["response"] for step in wavering["path"]]
+    assert stable_responses != wavering_responses
+
+
+def test_mixed_decisive_is_less_neutral_than_neutral_heavy() -> None:
+    mixed = run_session(
+        persona=PERSONAS[0],
+        scoring_model="binary_2pl",
+        max_items=20,
+        device="cpu",
+        param_mode="keyed",
+        param_path=None,
+        response_style="mixed_decisive",
+        seed=20260413,
+    )
+    neutral_heavy = run_session(
+        persona=PERSONAS[0],
+        scoring_model="binary_2pl",
+        max_items=20,
+        device="cpu",
+        param_mode="keyed",
+        param_path=None,
+        response_style="neutral_heavy",
+        seed=20260413,
+    )
+
+    mixed_neutral = sum(1 for step in mixed["path"] if step["response"] == 3)
+    neutral_heavy_neutral = sum(1 for step in neutral_heavy["path"] if step["response"] == 3)
+    assert mixed_neutral < neutral_heavy_neutral
 
 
 def test_param_source_resolves_keyed_mode() -> None:
@@ -309,10 +482,54 @@ def test_benchmark_output_includes_param_metadata() -> None:
 
     assert report["param_mode"] == "keyed"
     assert report["key_aligned"] is True
+    assert report["response_styles"] == [style.name for style in RESPONSE_STYLES]
     assert report["configs"][0]["personas"][0]["persona"]
+    assert report["configs"][0]["personas"][0]["response_style"]
+    assert "style_seed" in report["configs"][0]["personas"][0]
+    assert "style_profile" in report["configs"][0]["personas"][0]
     assert "average_mean_standard_error" in report["configs"][0]
     assert "average_dimension_coverage" in report["configs"][0]
+    assert "stability_score" in report["configs"][0]["personas"][0]
     assert "answered_count" in report["configs"][0]["personas"][0]["classical_big5"]["extraversion"]
+
+
+def test_stable_benchmark_style_finishes_before_wavering() -> None:
+    report = run_benchmark(
+        configs=DEFAULT_CONFIGS[2:3],
+        max_items=30,
+        min_items=5,
+        scoring_model="binary_2pl",
+        device="cpu",
+        param_mode="keyed",
+        param_path=None,
+        stop_stability_score=0.7,
+    )
+    sessions = report["configs"][0]["personas"]
+    stable_sessions = [session for session in sessions if session["response_style"] == "stable"]
+    wavering_sessions = [session for session in sessions if session["response_style"] == "wavering"]
+    stable_average = sum(session["answered_count"] for session in stable_sessions) / len(stable_sessions)
+    wavering_average = sum(session["answered_count"] for session in wavering_sessions) / len(wavering_sessions)
+
+    assert stable_average < wavering_average
+
+
+def test_mixed_decisive_finishes_later_than_stable_without_neutral_gate() -> None:
+    report = run_benchmark(
+        configs=DEFAULT_CONFIGS[:1],
+        max_items=30,
+        min_items=5,
+        scoring_model="binary_2pl",
+        device="cpu",
+        param_mode="keyed",
+        param_path=None,
+        stop_stability_score=0.7,
+    )
+    sessions = report["configs"][0]["personas"]
+    stable = next(session for session in sessions if session["persona"] == "balanced" and session["response_style"] == "stable")
+    mixed = next(session for session in sessions if session["persona"] == "balanced" and session["response_style"] == "mixed_decisive")
+
+    assert mixed["answered_count"] >= stable["answered_count"]
+    assert mixed["stopped_by"] != "max_items_cap"
 
 
 def test_param_mode_comparison_runs_both_tracks() -> None:

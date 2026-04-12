@@ -25,13 +25,14 @@ app.mount("/static", StaticFiles(directory=WEB_DIR), name="static")
 
 class CreateSessionRequest(BaseModel):
     scoring_model: str = Field(default="binary_2pl", pattern="^(binary_2pl|grm)$")
-    max_items: int = Field(default=12, ge=1, le=50)
-    min_items: int = Field(default=8, ge=1, le=50)
+    max_items: int = Field(default=30, ge=1, le=50)
+    min_items: int = Field(default=5, ge=1, le=50)
     device: str | None = None
-    param_mode: str | None = Field(default=None, pattern="^(legacy|keyed)$")
+    param_mode: str | None = Field(default="keyed", pattern="^(legacy|keyed)$")
     param_path: str | None = None
     coverage_min_per_dimension: int = Field(default=2, ge=0, le=10)
-    stop_mean_standard_error: float = Field(default=0.85, gt=0.0, le=5.0)
+    stop_mean_standard_error: float = Field(default=0.65, gt=0.0, le=5.0)
+    stop_stability_score: float = Field(default=0.7, ge=0.0, le=1.0)
 
 
 class ResponseRequest(BaseModel):
@@ -60,6 +61,7 @@ def create_session(payload: CreateSessionRequest) -> dict[str, object]:
         param_path=payload.param_path,
         coverage_min_per_dimension=payload.coverage_min_per_dimension,
         stop_mean_standard_error=payload.stop_mean_standard_error,
+        stop_stability_score=payload.stop_stability_score,
     )
     next_question_payload = session.next_question()
     SESSION_STORE.save_session(session)

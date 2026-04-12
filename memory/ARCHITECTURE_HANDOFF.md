@@ -1,6 +1,6 @@
 # CAT-Psych Architecture Handoff
 
-Last updated: 2026-04-12 15:20 Asia/Taipei
+Last updated: 2026-04-13 11:10 Asia/Taipei
 
 ## 1. Project Vision And Positioning
 
@@ -132,6 +132,35 @@ Short-term MVP target:
   - result/export payloads should carry parameter mode and parameter metadata,
   - benchmark and simulation outputs should carry script version and timestamp,
   - stop-rule reasoning should remain visible in API/Web results.
+- The Web MVP now also has a lookup-table progress estimate layer:
+  - use it for user-facing progress feel,
+  - keep it separate from true stopping logic,
+  - and never let it override the actual `progress.complete` state from the session.
+
+Current default interactive tuning:
+
+- `param_mode = keyed`
+- `max_items = 30`
+- `min_items = 5`
+- `coverage_min_per_dimension = 2`
+- `stop_stability_score = 0.7`
+- `stop_mean_standard_error = 0.65` remains an internal refinement target, not a user-facing control in the Web UI.
+
+Current stopping policy for the Web/default product path:
+
+- Use staged smart precision rather than a single visible SE threshold.
+- Early screening threshold: `0.85`
+- Refinement trigger: item `15`
+- Refinement target: configured `stop_mean_standard_error` (`0.65` by default), plus the existing stability-ready relaxation when applicable.
+- If a session passes item `15` without clearing the early `0.85` screen, stop with `screening_plateau` rather than continuing to chase the tighter refinement target.
+- Keep `min_items`, `coverage`, and `stability` as non-bypassable gates around this staged precision rule.
+
+Cross-review status after the staged smart-precision change:
+
+- Review confirmed the three-stage logic is self-consistent.
+- No high-priority findings remain.
+- Low-risk note: if future experiments use `coverage_min_per_dimension = 3`, the refinement trigger should likely be raised above `15`.
+- Recommended next improvement: turn the refinement trigger into a configurable session parameter for benchmark work.
 
 Long-term direction:
 

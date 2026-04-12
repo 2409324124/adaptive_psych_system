@@ -1,6 +1,6 @@
 # Adaptive Psych System Project Memory
 
-Last updated: 2026-04-12 15:20 Asia/Taipei
+Last updated: 2026-04-13 11:45 Asia/Taipei
 
 ## Project Goal
 
@@ -299,7 +299,27 @@ Completed:
 - Unified benchmark/simulation outputs with timestamp, script version, parameter metadata, and richer persona summaries.
 - Added `scripts/compare_param_modes.py` for fixed legacy-vs-keyed comparison bundles.
 - Web results now show experiment context, parameter mode, and stop-rule breakdown.
-- Current automated test status after the latest fixes: `35 passed`.
+- Added `data/progress_estimates.json` as the first lookup-table asset for dynamic progress estimation.
+- Added `services/progress_estimator.py` so session/API/export payloads now expose `progress_estimate`.
+- Live Web progress now shows:
+  - current question versus estimated total items,
+  - estimated completion percent,
+  - evidence stage,
+  - and lookup vs fallback estimate source.
+- Setup panel now exposes:
+  - `param_mode`
+  - `max_items`
+  - `min_items`
+  - `coverage_min_per_dimension`
+  - `stop_mean_standard_error`
+- Default interactive path is now:
+  - `param_mode = keyed`
+  - `max_items = 30`
+  - `min_items = 5`
+  - `coverage_min_per_dimension = 2`
+  - `stop_mean_standard_error = 0.65`
+- Rationale: the old `legacy + 0.85` defaults stopped around 10 items, while the new keyed path better matches the product goal of a CAT that adapts within a 30-item ceiling.
+- Current automated test status after the latest fixes: `36 passed`.
 
 Implemented engine modules:
 
@@ -362,7 +382,7 @@ Encoding note:
 2. Continue tuning the local Web app:
    - `uvicorn api.app:app --host 127.0.0.1 --port 8000 --reload`
    - Open `http://127.0.0.1:8000`
-   - Check item flow, score display, model choice, low-evidence labels, session restart/export behavior, interpretation wording, and confidence/early-stop messaging.
+   - Check item flow, score display, model choice, low-evidence labels, session restart/export behavior, interpretation wording, confidence/early-stop messaging, and lookup-based progress estimate behavior.
 
 3. Refine the human-readable interpretation layer:
    - Make wording less engineering-heavy and more like a psychological feedback summary.
@@ -375,12 +395,32 @@ Encoding note:
    - JSON parsing for trait-weight interpretation.
    - Graceful fallback when Ollama is not running.
 
-5. Keep the current dual-track parameter strategy:
-   - `legacy` remains the default for compatibility.
-   - `keyed` is the more realistic experimental baseline.
-   - Revisit flipping the default only after benchmark/output stability and Web experiment visibility are both in good shape.
+5. Current default interactive policy:
+   - `keyed` is now the default interactive path.
+   - `max_items = 30`
+   - `min_items = 5`
+   - `coverage_min_per_dimension = 2`
+   - Web no longer exposes a raw `stop_mean_standard_error` field to end users.
+   - The product-facing rule is now a staged "smart precision" flow instead of a visible single SE number.
 
-6. Implement Tkinter MVP:
+6. Current smart-precision stopping logic:
+   - Stage 1: early screening at `0.85` mean SE.
+   - Stage 2 trigger: after item `15`, only sessions that already cleared `0.85` enter refinement.
+   - Stage 3 refinement: use the tighter configured SE target (`0.65` by default), with the existing stability bonus behavior.
+   - Plateau rule: if a session goes past item `15` and still has not cleared `0.85`, stop via `screening_plateau` instead of endlessly chasing the stricter target.
+   - This is intended to match human product expectations better: quick exit for stable/clear patterns, deeper probing only when the broad screen has succeeded.
+
+7. Stability-aware stopping remains active:
+   - true stop logic now depends on `min_items + coverage + staged precision + stability`.
+   - `neutral-heavy` / all-3 response patterns are hard-gated from being labeled stable.
+   - Current review consensus: this behavior is directionally correct and no high-priority issues remain.
+
+8. Review follow-up status:
+   - v7 cross-review confirmed the three-stage stop logic is self-consistent.
+   - No high-priority problems were found.
+   - Best next structural improvement: make `REFINEMENT_ITEM_TRIGGER` configurable instead of module-level constant.
+
+9. Implement Tkinter MVP:
    - Chat bubbles.
    - Option buttons for Likert responses.
    - Optional free-text input.
