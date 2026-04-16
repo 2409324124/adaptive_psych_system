@@ -457,3 +457,94 @@ def test_fastapi_session_flow(tmp_path: Path, monkeypatch) -> None:
         persisted = db.get(UserSessionRecord, session_id)
         assert persisted is not None
         assert persisted.cat_category == "Siberian Black"
+
+
+def test_result_fallback_persists_once_and_shared_link_survives(tmp_path: Path, monkeypatch) -> None:
+    db_path = tmp_path / "cat_psych.db"
+    test_engine = create_engine(f"sqlite:///{db_path.as_posix()}", connect_args={"check_same_thread": False})
+    Base.metadata.create_all(bind=test_engine)
+    test_session_local = sessionmaker(autocommit=False, autoflush=False, bind=test_engine)
+
+    monkeypatch.setattr(
+        api_module,
+        "SESSION_STORE",
+        SessionStore(backend="json", ttl_seconds=3600, storage_dir=tmp_path / "sessions"),
+    )
+    monkeypatch.setattr(api_module, "SessionLocal", test_session_local)
+
+    fallback_calls = {"count": 0}
+
+    def fake_analysis(ocean_scores, user_comments):
+        fallback_calls["count"] += 1
+        return {
+            "category_key": "Scottish Fold",
+            "analysis": f"Fallback-safe analysis with {len(user_comments)} comment(s).",
+        }
+
+    monkeypatch.setattr(api_module, "analyze_personality", fake_analysis)
+    client = TestClient(app)
+
+    created = client.post(
+        "/sessions",
+        json={
+            "scoring_model": "binary_2pl",
+            "max_items": 2,
+            "min_items": 1,
+            "device": "cpu",
+            "coverage_min_per_dimension": 1,
+            "stop_mean_standard_error": 5.0,
+            "stop_stability_score": 0.0,
+        },
+    )
+    assert created.status_code == 200
+    payload = created.json()
+    session_id = payload["session_id"]
+    first_item = payload["next_question"]
+
+    first_response = client.post(
+        f"/sessions/{session_id}/responses",
+        json={"item_id": first_item["item_id"], "response": 4},
+    )
+    assert first_response.status_code == 200
+    second_item = first_response.json()["next_question"]
+    assert second_item is not None
+
+    second_response = client.post(
+        f"/sessions/{session_id}/responses",
+        json={"item_id": second_item["item_id"], "response": 5},
+    )
+    assert second_response.status_code == 200
+    assert second_response.json()["complete"] is True
+
+    comment_response = client.post(
+        f"/sessions/{session_id}/comments",
+        json={"comment": "这轮我先留一句吐槽，看看 fallback 会不会稳定落库。"},
+    )
+    assert comment_response.status_code == 200
+
+    first_result = client.get(f"/sessions/{session_id}/result")
+    assert first_result.status_code == 200
+    first_payload = first_result.json()
+    assert first_payload["cat_category"] == "Scottish Fold"
+    assert "Fallback-safe analysis" in first_payload["cat_analysis"]
+
+    second_result = client.get(f"/sessions/{session_id}/result")
+    assert second_result.status_code == 200
+    second_payload = second_result.json()
+    assert second_payload["cat_analysis"] == first_payload["cat_analysis"]
+    assert second_payload["cat_category"] == first_payload["cat_category"]
+    assert fallback_calls["count"] == 1
+
+    with test_session_local() as db:
+        persisted = db.get(UserSessionRecord, session_id)
+        assert persisted is not None
+        assert persisted.cat_category == "Scottish Fold"
+        assert persisted.raw_responses["user_comments"] == ["这轮我先留一句吐槽，看看 fallback 会不会稳定落库。"]
+
+    deleted = client.delete(f"/sessions/{session_id}")
+    assert deleted.status_code == 200
+
+    shared = client.get(f"/results/{session_id}")
+    assert shared.status_code == 200
+    assert shared.json()["cat_category"] == "Scottish Fold"
+    assert shared.json()["cat_analysis"] == first_payload["cat_analysis"]

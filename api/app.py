@@ -9,6 +9,7 @@ from fastapi import Depends, FastAPI, HTTPException
 from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from engine.database import SessionLocal, UserSessionRecord
@@ -170,9 +171,16 @@ def get_or_create_persisted_result(session_id: str, db: Session) -> dict[str, ob
         raw_responses=build_persisted_snapshot(result_payload),
     )
     db.add(persisted)
-    db.commit()
-    db.refresh(persisted)
-    return combine_db_record(persisted)
+    try:
+        db.commit()
+        db.refresh(persisted)
+        return combine_db_record(persisted)
+    except IntegrityError:
+        db.rollback()
+        record = db.get(UserSessionRecord, session_id)
+        if record is not None:
+            return combine_db_record(record)
+        raise
 
 
 @app.get("/")
