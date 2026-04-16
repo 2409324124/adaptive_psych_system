@@ -27,7 +27,7 @@ class AssessmentSession:
     coverage_min_per_dimension: int = 2
     stop_mean_standard_error: float = 0.65
     stop_stability_score: float = 0.7
-    session_id: str = field(default_factory=lambda: uuid4().hex)
+    session_id: str = field(default_factory=lambda: str(uuid4()))
     created_at: str = field(default_factory=lambda: datetime.now(UTC).isoformat())
     updated_at: str = field(default_factory=lambda: datetime.now(UTC).isoformat())
 
@@ -48,6 +48,8 @@ class AssessmentSession:
         self.responses: dict[str, int] = {}
         self.path: list[dict[str, object]] = []
         self.active_item: dict[str, object] | None = None
+        self.user_comments: list[str] = []
+        self.comment_submitted: bool = False
 
     def touch(self) -> None:
         self.updated_at = datetime.now(UTC).isoformat()
@@ -243,11 +245,27 @@ class AssessmentSession:
             "complete": self.is_complete,
         }
 
+    def add_comment(self, comment: str) -> dict[str, object]:
+        self.touch()
+        text = comment.strip()
+        if not text:
+            raise ValueError("Comment must not be empty.")
+        self.user_comments.append(text)
+        self.comment_submitted = True
+        return {
+            "session_id": self.session_id,
+            "accepted": True,
+            "comment_submitted": self.comment_submitted,
+            "user_comments": list(self.user_comments),
+        }
+
     def restart(self) -> None:
         self.router.reset()
         self.responses.clear()
         self.path.clear()
         self.active_item = None
+        self.user_comments.clear()
+        self.comment_submitted = False
         self.touch()
 
     def summary(self) -> dict[str, object]:
@@ -262,6 +280,8 @@ class AssessmentSession:
             "stop_mean_standard_error": self.stop_mean_standard_error,
             "stop_stability_score": self.stop_stability_score,
             "device": self.device,
+            "comment_submitted": self.comment_submitted,
+            "user_comments": list(self.user_comments),
             **self.parameter_summary(),
             "progress": self.progress(),
             "progress_estimate": self.progress_estimate(),
@@ -296,7 +316,12 @@ class AssessmentSession:
                 irt_t_scores=irt_t_scores,
                 dimension_answer_counts=dimension_answer_counts,
             ),
+            "responses": self.responses,
             "path": self.path,
+            "cat_category": None,
+            "cat_name": None,
+            "cat_image": None,
+            "cat_analysis": None,
         }
 
     @classmethod
@@ -334,5 +359,7 @@ class AssessmentSession:
             )
         active_item = payload.get("active_item")
         session.active_item = dict(active_item) if isinstance(active_item, dict) else None
+        session.user_comments = [str(comment) for comment in payload.get("user_comments", [])]
+        session.comment_submitted = bool(payload.get("comment_submitted", bool(session.user_comments)))
         session.updated_at = str(payload.get("updated_at") or datetime.now(UTC).isoformat())
         return session

@@ -62,10 +62,33 @@ Session API highlights:
 - `GET /sessions/{session_id}`
 - `GET /sessions/{session_id}/next`
 - `POST /sessions/{session_id}/responses`
+- `POST /sessions/{session_id}/comments`
 - `GET /sessions/{session_id}/result`
 - `GET /sessions/{session_id}/export`
 - `POST /sessions/{session_id}/restart`
 - `DELETE /sessions/{session_id}`
+- `GET /results/{session_id}`
+
+Result persistence:
+
+- In-progress sessions still live in `SessionStore`.
+- Completed cat-persona results are cached in SQLite at `data/cat_psych.db`.
+- The first completed result generation stores:
+  - IRT T scores
+  - cat category
+  - roleplay-style analysis
+  - raw routed responses and user comments
+- Shared result links use `?result=<session_id>` and resolve through `GET /results/{session_id}`.
+
+Cat persona assets:
+
+- Static artwork lives under `web/cats/`.
+- Mapping from English category keys to Chinese titles and images is stored in `data/cat_mapping.json`.
+- DeepSeek integration lives behind a fallback-safe skeleton in `llm/deepseek_client.py`.
+- DeepSeek credentials can be filled into the project-root `.env` file:
+  - `DEEPSEEK_API_KEY`
+  - `DEEPSEEK_BASE_URL`
+  - `DEEPSEEK_MODEL`
 
 The Web setup panel now lets you tune:
 
@@ -73,13 +96,15 @@ The Web setup panel now lets you tune:
 - `max_items`
 - `min_items`
 - `coverage_min_per_dimension`
-- `stop_mean_standard_error`
+- smart precision and stability behavior through the staged stopping flow
 
 The live session view uses a lookup-table progress estimate so users see:
 
 - `current question / estimated total items`
 - estimated completion percent
 - current evidence stage
+
+After the final routed item, the Web app now offers an optional free-text comment box before generating the final cat-persona result.
 
 ## Data Preparation
 

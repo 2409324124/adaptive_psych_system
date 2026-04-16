@@ -113,6 +113,18 @@
             <p class="response-caption">1 = very inaccurate, 5 = very accurate</p>
           </section>
         </div>
+        <section class="comment-panel" id="commentPanel" hidden>
+          <p class="eyebrow">Final note</p>
+          <h3>还有什么想让猫娘听见的吗？</h3>
+          <p class="response-caption">
+            可以补一句吐槽、补充说明，或者直接跳过。它会进入最终角色分析，但不会改变已经完成的量表分数。
+          </p>
+          <textarea id="commentInput" rows="5" placeholder="比如：我平时写代码会很上头，但社交时更像掉线状态。"></textarea>
+          <div class="results-actions">
+            <button id="commentSubmitBtn" type="button">生成专属结果</button>
+            <button id="commentSkipBtn" class="secondary" type="button">直接查看结果</button>
+          </div>
+        </section>
       </section>
 
       <section class="stage stage--results" id="results" hidden>
@@ -128,6 +140,23 @@
           </div>
         </header>
         <p class="notice" id="resultNotice"></p>
+        <section class="cat-result" id="catResult">
+          <div class="cat-result__media">
+            <img id="catImage" alt="Cat persona artwork" />
+          </div>
+          <div class="cat-result__copy">
+            <p class="eyebrow">你的角色化结果</p>
+            <h3 id="catName">猫娘结果生成中</h3>
+            <p class="cat-analysis" id="catAnalysis"></p>
+            <div class="share-card">
+              <p class="metric-name">你的专属测试哈希码</p>
+              <p class="share-hash" id="shareHash"></p>
+              <div class="results-actions">
+                <button id="copyLinkBtn" class="secondary" type="button">复制专属结果链接</button>
+              </div>
+            </div>
+          </div>
+        </section>
         <section class="interpretation-panel" id="interpretationPanel">
           <h3>Interpretation</h3>
           <p class="interpretation-overview" id="interpretationOverview"></p>
@@ -147,47 +176,47 @@
             </div>
           </div>
         </section>
-        <section class="confidence-panel" id="confidencePanel">
-          <div class="confidence-summary">
-            <div>
-              <p class="eyebrow">Confidence</p>
-              <h3 id="confidenceTitle">Confidence summary</h3>
-              <p class="confidence-copy" id="confidenceCopy"></p>
-            </div>
-            <div class="confidence-badges">
-              <article>
-                <p class="metric-name">Mean standard error</p>
-                <p class="metric-value metric-value--small" id="meanStandardError">0.00</p>
-              </article>
-              <article>
-                <p class="metric-name">Confidence ready</p>
-                <p class="metric-value metric-value--small" id="confidenceReady">No</p>
-              </article>
-              <article>
-                <p class="metric-name">Stability score</p>
-                <p class="metric-value metric-value--small" id="stabilityScore">0.00</p>
-              </article>
-              <article>
-                <p class="metric-name">Stability stage</p>
-                <p class="metric-value metric-value--small" id="stabilityStage">Mixed</p>
-              </article>
-            </div>
-          </div>
-          <div class="confidence-grid" id="confidenceGrid"></div>
-        </section>
-        <div class="coverage-grid" id="coverageGrid"></div>
-        <div class="score-grid">
-          <div>
-            <h3>IRT tendency T scores</h3>
-            <dl id="irtScores"></dl>
-          </div>
-          <div>
-            <h3>Classical Big Five comparison</h3>
-            <dl id="classicalScores"></dl>
-          </div>
-        </div>
         <details class="experiment-details" id="experimentDetails">
-          <summary>Experiment details</summary>
+          <summary>点击查看底层精神测量学溯源</summary>
+          <section class="confidence-panel" id="confidencePanel">
+            <div class="confidence-summary">
+              <div>
+                <p class="eyebrow">Confidence</p>
+                <h3 id="confidenceTitle">Confidence summary</h3>
+                <p class="confidence-copy" id="confidenceCopy"></p>
+              </div>
+              <div class="confidence-badges">
+                <article>
+                  <p class="metric-name">Mean standard error</p>
+                  <p class="metric-value metric-value--small" id="meanStandardError">0.00</p>
+                </article>
+                <article>
+                  <p class="metric-name">Confidence ready</p>
+                  <p class="metric-value metric-value--small" id="confidenceReady">No</p>
+                </article>
+                <article>
+                  <p class="metric-name">Stability score</p>
+                  <p class="metric-value metric-value--small" id="stabilityScore">0.00</p>
+                </article>
+                <article>
+                  <p class="metric-name">Stability stage</p>
+                  <p class="metric-value metric-value--small" id="stabilityStage">Mixed</p>
+                </article>
+              </div>
+            </div>
+            <div class="confidence-grid" id="confidenceGrid"></div>
+          </section>
+          <div class="coverage-grid" id="coverageGrid"></div>
+          <div class="score-grid">
+            <div>
+              <h3>IRT tendency T scores</h3>
+              <dl id="irtScores"></dl>
+            </div>
+            <div>
+              <h3>Classical Big Five comparison</h3>
+              <dl id="classicalScores"></dl>
+            </div>
+          </div>
           <div class="interpretation-grid">
             <div>
               <h4>Parameter mode</h4>

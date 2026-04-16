@@ -426,6 +426,56 @@ Encoding note:
    - Optional free-text input.
    - Main loop in `main.py`.
 
+10. Cat-persona result layer and SQL persistence are now in place:
+   - Completed sessions can now persist finalized result bundles into SQLite at `data/cat_psych.db`.
+   - The SQL table is `user_sessions`, managed through `engine/database.py`.
+   - Persisted fields currently include:
+     - session UUID,
+     - created time,
+     - IRT Big Five T scores,
+     - cat persona category key,
+     - cat analysis text,
+     - raw routed responses plus free-text user comments.
+   - In-progress sessions are still handled by `SessionStore`; SQL is for completed/shareable results only.
+
+11. Cat persona mapping/assets:
+   - `data/cat_mapping.json` is now the single source of truth for the 8 cat persona keys.
+   - Static artwork now lives under `web/cats/`.
+   - Result pages render:
+     - cat image,
+     - Chinese persona title,
+     - analysis text,
+     - shareable session hash,
+     - and a copy-link action using `?result=<session_id>`.
+
+12. DeepSeek skeleton integration:
+   - `llm/deepseek_client.py` now supports real OpenAI-style DeepSeek calls.
+   - It reads credentials from:
+     - `DEEPSEEK_API_KEY`
+     - `DEEPSEEK_BASE_URL`
+     - `DEEPSEEK_MODEL`
+   - The project root `.env` file is now auto-loaded via `python-dotenv`.
+   - Missing key / call failure / JSON parse failure all fall back to a deterministic local persona result rather than breaking `/result`.
+   - `.env` is intentionally local-only and must never be committed.
+
+13. New result/share API behavior:
+   - `POST /sessions/{session_id}/comments` appends optional free-text remarks before final result generation.
+   - `GET /sessions/{session_id}/result` now:
+     - checks SQL first for completed sessions,
+     - generates/persists cat persona output on first completion,
+     - and reuses the stored result on later reads.
+   - `GET /results/{session_id}` now serves persisted results without needing the in-memory session to still exist.
+
+14. Current product-feel additions:
+   - End-of-assessment comment box before final result generation.
+   - Result page now prioritizes roleplay-style persona output over raw psychometric internals.
+   - Raw IRT / SE / coverage / classical comparison are moved under the expandable “点击查看底层精神测量学溯源” section.
+
+15. Current secret/runtime handling:
+   - `.env` placeholders are now scaffolded locally for DeepSeek credentials.
+   - `data/cat_psych.db` is a generated runtime artifact and should stay out of version control.
+   - Both `.env` and the SQLite DB are now ignored by git.
+
 ## Useful Commands
 
 Activate environment:

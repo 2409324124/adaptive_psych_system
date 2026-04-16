@@ -2,6 +2,9 @@ const startBtn = document.querySelector("#startBtn");
 const restartBtn = document.querySelector("#restartBtn");
 const newSessionBtn = document.querySelector("#newSessionBtn");
 const exportBtn = document.querySelector("#exportBtn");
+const copyLinkBtn = document.querySelector("#copyLinkBtn");
+const commentSubmitBtn = document.querySelector("#commentSubmitBtn");
+const commentSkipBtn = document.querySelector("#commentSkipBtn");
 const paramModeInput = document.querySelector("#paramMode");
 const modelInput = document.querySelector("#model");
 const maxItemsInput = document.querySelector("#maxItems");
@@ -14,6 +17,8 @@ const setupSummary = document.querySelector("#setupSummary");
 const advancedPanel = document.querySelector("#advancedPanel");
 const sessionStage = document.querySelector("#sessionStage");
 const questionArea = document.querySelector("#questionArea");
+const commentPanel = document.querySelector("#commentPanel");
+const commentInput = document.querySelector("#commentInput");
 const sessionTitle = document.querySelector("#sessionTitle");
 const sessionDetails = document.querySelector("#sessionDetails");
 const sessionConfigLabel = document.querySelector("#sessionConfigLabel");
@@ -26,6 +31,10 @@ const chatLog = document.querySelector("#chatLog");
 const resultsEl = document.querySelector("#results");
 const resultProgress = document.querySelector("#resultProgress");
 const resultNotice = document.querySelector("#resultNotice");
+const catImage = document.querySelector("#catImage");
+const catName = document.querySelector("#catName");
+const catAnalysis = document.querySelector("#catAnalysis");
+const shareHash = document.querySelector("#shareHash");
 const paramModeLabel = document.querySelector("#paramModeLabel");
 const paramPathLabel = document.querySelector("#paramPathLabel");
 const stopReasonLabel = document.querySelector("#stopReasonLabel");
@@ -76,25 +85,35 @@ startBtn.addEventListener("click", startSession);
 restartBtn.addEventListener("click", restartSession);
 newSessionBtn.addEventListener("click", resetApp);
 exportBtn.addEventListener("click", exportSession);
+copyLinkBtn.addEventListener("click", copyShareLink);
+commentSubmitBtn.addEventListener("click", submitCommentAndLoadResult);
+commentSkipBtn.addEventListener("click", loadResults);
 paramModeInput.addEventListener("change", renderSetupSummary);
 modelInput.addEventListener("change", renderSetupSummary);
 maxItemsInput.addEventListener("input", renderSetupSummary);
 minItemsInput.addEventListener("input", renderSetupSummary);
 coverageMinInput.addEventListener("input", renderSetupSummary);
-  stopStabilityScoreInput.addEventListener("input", renderSetupSummary);
+stopStabilityScoreInput.addEventListener("input", renderSetupSummary);
 
-function resetApp() {
+function resetApp(clearResultParam = true) {
+  if (clearResultParam) {
+    const url = new URL(window.location.href);
+    url.searchParams.delete("result");
+    window.history.replaceState({}, "", url);
+  }
   sessionId = null;
   currentQuestion = null;
   submitting = false;
   setupStage.hidden = false;
   setupPanel.hidden = false;
   sessionStage.hidden = true;
-  resultsEl.hidden = true;
   questionArea.hidden = false;
+  commentPanel.hidden = true;
+  resultsEl.hidden = true;
   advancedPanel.open = false;
   sessionDetails.open = false;
   experimentDetails.open = false;
+  commentInput.value = "";
   sessionConfigLabel.textContent = "";
   setupSummary.textContent = "";
   questionText.textContent = "";
@@ -112,6 +131,10 @@ function resetApp() {
   classicalScores.innerHTML = "";
   resultProgress.textContent = "";
   resultNotice.textContent = "";
+  catImage.removeAttribute("src");
+  catName.textContent = "";
+  catAnalysis.textContent = "";
+  shareHash.textContent = "";
   paramModeLabel.textContent = "";
   paramPathLabel.textContent = "";
   stopReasonLabel.textContent = "";
@@ -153,6 +176,7 @@ async function startSession() {
       throw new Error(payload.detail || "Failed to create session.");
     }
     sessionId = payload.session_id;
+    commentInput.value = "";
     chatLog.innerHTML = "";
     appendBubble("system", "Session started. Answer naturally. The next item will adapt to your last response.");
     setupStage.hidden = true;
@@ -173,20 +197,20 @@ async function restartSession() {
     resetApp();
     return;
   }
-
   restartBtn.disabled = true;
   try {
-    const response = await fetch(`/sessions/${sessionId}/restart`, {
-      method: "POST",
-    });
+    const response = await fetch(`/sessions/${sessionId}/restart`, { method: "POST" });
     const payload = await response.json();
     if (!response.ok) {
       throw new Error(payload.detail || "Failed to restart session.");
     }
+    commentInput.value = "";
     chatLog.innerHTML = "";
     appendBubble("system", "Session restarted. You are back at the first routed item.");
     resultsEl.hidden = true;
     sessionStage.hidden = false;
+    questionArea.hidden = false;
+    commentPanel.hidden = true;
     renderSessionConfig(payload);
     renderQuestion(payload.next_question);
   } catch (error) {
@@ -200,16 +224,19 @@ function renderQuestion(question) {
   currentQuestion = question;
   if (!question) {
     questionArea.hidden = true;
-    loadResults();
+    commentPanel.hidden = false;
+    updateProgress(
+      { answered: Number(progressLabel.dataset.answered || 0), max_items: Number(maxItemsInput.value), complete: true },
+      null
+    );
     return;
   }
-
+  commentPanel.hidden = true;
   questionArea.hidden = false;
   updateProgress(question.progress, question.progress_estimate);
   sessionTitle.textContent = `Adaptive check-in | prompt ${question.progress.answered + 1}`;
   questionText.textContent = question.text;
   appendBubble("system", question.text);
-
   responsesEl.innerHTML = "";
   for (const value of [1, 2, 3, 4, 5]) {
     const button = document.createElement("button");
@@ -225,27 +252,23 @@ async function submitResponse(value) {
   if (submitting || !currentQuestion) {
     return;
   }
-
   submitting = true;
   setResponseButtonsDisabled(true);
-
   try {
     appendBubble("answer", responseLabels[value]);
     const response = await fetch(`/sessions/${sessionId}/responses`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        item_id: currentQuestion.item_id,
-        response: value,
-      }),
+      body: JSON.stringify({ item_id: currentQuestion.item_id, response: value }),
     });
     const payload = await response.json();
     if (!response.ok) {
       throw new Error(payload.detail || "Failed to submit response.");
     }
     if (payload.complete) {
+      currentQuestion = null;
       questionArea.hidden = true;
-      await loadResults();
+      commentPanel.hidden = false;
       return;
     }
     renderQuestion(payload.next_question);
@@ -258,53 +281,115 @@ async function submitResponse(value) {
   }
 }
 
+async function submitCommentAndLoadResult() {
+  const comment = commentInput.value.trim();
+  if (!sessionId) {
+    return;
+  }
+  if (comment) {
+    commentSubmitBtn.disabled = true;
+    try {
+      const response = await fetch(`/sessions/${sessionId}/comments`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ comment }),
+      });
+      const payload = await response.json();
+      if (!response.ok) {
+        throw new Error(payload.detail || "Failed to save comment.");
+      }
+      appendBubble("answer", `补充说明：${comment}`);
+    } catch (error) {
+      window.alert(error.message);
+      commentSubmitBtn.disabled = false;
+      return;
+    } finally {
+      commentSubmitBtn.disabled = false;
+    }
+  }
+  await loadResults();
+}
+
 async function loadResults() {
+  if (!sessionId) {
+    return;
+  }
   const response = await fetch(`/sessions/${sessionId}/result`);
   const result = await response.json();
   if (!response.ok) {
     window.alert(result.detail || "Failed to load results.");
     return;
   }
+  renderResultPayload(result);
+}
 
+async function loadSharedResult(sharedSessionId) {
+  const response = await fetch(`/results/${sharedSessionId}`);
+  const payload = await response.json();
+  if (!response.ok) {
+    throw new Error(payload.detail || "Failed to load shared result.");
+  }
+  renderResultPayload(payload);
+}
+
+function renderResultPayload(result) {
+  sessionId = result.session_id;
+  currentQuestion = null;
   sessionStage.hidden = true;
   resultsEl.hidden = false;
-  renderResultProgress(result.progress, result.progress_estimate);
-  resultNotice.textContent = result.disclaimer;
+  questionArea.hidden = true;
+  commentPanel.hidden = true;
+  setupStage.hidden = true;
+  setupPanel.hidden = true;
+  renderResultProgress(result.progress || {}, result.progress_estimate || {});
+  resultNotice.textContent = result.disclaimer || "本系统仅作为心理特质筛查与辅助参考工具，绝对不可替代专业精神科临床诊断。";
   renderSessionConfig(result);
   renderExperimentContext(result);
-  renderConfidence(result.progress, result.progress_estimate, result.standard_errors, result.uncertainty);
-  renderInterpretation(result.interpretation);
-  renderCoverage(result.dimension_answer_counts, result.progress.answered, result.progress.max_items);
-  renderScores(irtScores, result.irt_t_scores);
+  renderConfidence(result.progress || {}, result.progress_estimate || {}, result.standard_errors || {}, result.uncertainty || {});
+  renderInterpretation(result.interpretation || { overview: "", range_summary: "", highlights: [], lowlights: [], cautions: [] });
+  renderCoverage(result.dimension_answer_counts || {}, result.progress?.answered || 0);
+  renderScores(irtScores, result.irt_t_scores || {});
 
   const classical = {};
-  for (const [trait, score] of Object.entries(result.classical_big5)) {
+  for (const [trait, score] of Object.entries(result.classical_big5 || {})) {
     classical[trait] =
       score.tendency_t_score === null
         ? `NA (${score.answered_count})`
-        : `${score.tendency_t_score.toFixed(1)} (${score.answered_count})${score.answered_count < 2 ? " low evidence" : ""}`;
+        : `${Number(score.tendency_t_score).toFixed(1)} (${score.answered_count})${score.answered_count < 2 ? " low evidence" : ""}`;
   }
   renderScores(classicalScores, classical);
+  renderCatResult(result);
+}
+
+function renderCatResult(result) {
+  catImage.src = result.cat_image || "";
+  catImage.hidden = !result.cat_image;
+  catName.textContent = result.cat_name || "猫娘结果准备中";
+  catAnalysis.textContent = result.cat_analysis || "这份结果还没有生成角色化文案。";
+  shareHash.textContent = result.session_id || "";
 }
 
 function renderInterpretation(interpretation) {
-  interpretationOverview.textContent = interpretation.overview;
-  interpretationRange.textContent = interpretation.range_summary;
-  renderList(highlightList, interpretation.highlights);
-  renderList(lowlightList, interpretation.lowlights);
-  renderList(cautionList, interpretation.cautions);
+  interpretationOverview.textContent = interpretation.overview || "";
+  interpretationRange.textContent = interpretation.range_summary || "";
+  renderList(highlightList, interpretation.highlights || []);
+  renderList(lowlightList, interpretation.lowlights || []);
+  renderList(cautionList, interpretation.cautions || []);
 }
 
 function renderSetupSummary() {
   const minItems = Math.min(Number(minItemsInput.value || 0), Number(maxItemsInput.value || 0));
   const modeLabel = paramModeInput.value === "keyed" ? "adaptive 30-item target" : "fast estimate";
   setupSummary.textContent =
-    `Recommended ${modeLabel} | evidence floor ${minItems} | coverage ${coverageMinInput.value} | smart precision 0.85 → 0.65 | stability ${Number(stopStabilityScoreInput.value).toFixed(2)}`;
+    `Recommended ${modeLabel} | evidence floor ${minItems} | coverage ${coverageMinInput.value} | smart precision 0.85 -> 0.65 | stability ${Number(stopStabilityScoreInput.value).toFixed(2)}`;
 }
 
 function renderSessionConfig(payload) {
+  const screeningSe = payload.progress?.screening_stop_mean_standard_error ?? 0.85;
+  const refinementSe = payload.stop_mean_standard_error ?? 0.65;
+  const trigger = payload.progress?.refinement_item_trigger ?? 15;
   sessionConfigLabel.textContent =
-    `Mode ${payload.param_mode} | model ${payload.scoring_model} | evidence floor ${payload.min_items} | coverage ${payload.coverage_min_per_dimension} | smart precision ${Number(payload.progress?.screening_stop_mean_standard_error ?? 0.85).toFixed(2)} → ${Number(payload.stop_mean_standard_error).toFixed(2)} after item ${payload.progress?.refinement_item_trigger ?? 15} | stop stability ${Number(payload.stop_stability_score).toFixed(2)} | hard cap ${payload.max_items}`;
+    `Mode ${payload.param_mode || "keyed"} | model ${payload.scoring_model || "binary_2pl"} | evidence floor ${payload.min_items ?? 5} | coverage ${payload.coverage_min_per_dimension ?? 2} | smart precision ${Number(screeningSe).toFixed(2)} -> ${Number(refinementSe).toFixed(2)} after item ${trigger} | stop stability ${Number(payload.stop_stability_score ?? 0.7).toFixed(2)} | hard cap ${payload.max_items ?? 30}`;
 }
 
 function renderExperimentContext(result) {
@@ -312,40 +397,40 @@ function renderExperimentContext(result) {
   paramModeLabel.textContent = `${mode}${result.key_aligned ? " | parameter-aligned" : " | runtime reverse-key handling"}`;
   paramPathLabel.textContent = result.param_path || "No parameter file recorded";
   paramMetaLabel.textContent = `generator ${result.param_metadata?.generator || "unknown"} | seed ${result.param_metadata?.seed ?? "n/a"}`;
-
+  const progress = result.progress || {};
   const stopReasons = [];
-  if (result.progress.min_items_met) {
-    stopReasons.push(`Minimum items met (${result.progress.answered}/${result.progress.min_items}).`);
+  if (progress.min_items_met) {
+    stopReasons.push(`Minimum items met (${progress.answered}/${progress.min_items}).`);
   } else {
-    stopReasons.push(`Minimum items gate still active (${result.progress.answered}/${result.progress.min_items}).`);
+    stopReasons.push(`Minimum items gate still active (${progress.answered}/${progress.min_items}).`);
   }
-  if (result.progress.coverage_ready) {
-    stopReasons.push(`Coverage floor met at ${result.progress.coverage_min_per_dimension} item(s) per trait.`);
+  if (progress.coverage_ready) {
+    stopReasons.push(`Coverage floor met at ${progress.coverage_min_per_dimension} item(s) per trait.`);
   } else {
-    stopReasons.push(`Coverage floor not met yet: target ${result.progress.coverage_min_per_dimension} item(s) per trait.`);
+    stopReasons.push(`Coverage floor not met yet: target ${progress.coverage_min_per_dimension} item(s) per trait.`);
   }
-  if (result.progress.screening_threshold_ready) {
-    stopReasons.push(`Early screening passed the ${Number(result.progress.screening_stop_mean_standard_error).toFixed(2)} threshold.`);
+  if (progress.screening_threshold_ready) {
+    stopReasons.push(`Early screening passed the ${Number(progress.screening_stop_mean_standard_error).toFixed(2)} threshold.`);
   } else {
-    stopReasons.push(`Early screening is still above ${Number(result.progress.screening_stop_mean_standard_error).toFixed(2)}.`);
+    stopReasons.push(`Early screening is still above ${Number(progress.screening_stop_mean_standard_error).toFixed(2)}.`);
   }
-  if (result.progress.precision_mode === "refining") {
-    if (result.progress.standard_error_ready) {
-      stopReasons.push(`Refinement reached the active ${Number(result.progress.effective_stop_mean_standard_error).toFixed(2)} threshold.`);
+  if (progress.precision_mode === "refining") {
+    if (progress.standard_error_ready) {
+      stopReasons.push(`Refinement reached the active ${Number(progress.effective_stop_mean_standard_error).toFixed(2)} threshold.`);
     } else {
-      stopReasons.push(`Refinement is still above the active ${Number(result.progress.effective_stop_mean_standard_error).toFixed(2)} threshold.`);
+      stopReasons.push(`Refinement is still above the active ${Number(progress.effective_stop_mean_standard_error).toFixed(2)} threshold.`);
     }
-  } else if (result.progress.stopped_by === "screening_plateau") {
+  } else if (progress.stopped_by === "screening_plateau") {
     stopReasons.push(
-      `The session passed item ${result.progress.refinement_item_trigger} without clearing the early ${Number(result.progress.screening_stop_mean_standard_error).toFixed(2)} screen, so it wrapped at the screening stage.`
+      `The session passed item ${progress.refinement_item_trigger} without clearing the early ${Number(progress.screening_stop_mean_standard_error).toFixed(2)} screen, so it wrapped at the screening stage.`
     );
   }
-  if (result.progress.stability_ready) {
-    stopReasons.push(`Response stability reached the ${Number(result.progress.stop_stability_score).toFixed(2)} threshold.`);
+  if (progress.stability_ready) {
+    stopReasons.push(`Response stability reached the ${Number(progress.stop_stability_score).toFixed(2)} threshold.`);
   } else {
-    stopReasons.push(`Response stability is still below the ${Number(result.progress.stop_stability_score).toFixed(2)} threshold.`);
+    stopReasons.push(`Response stability is still below the ${Number(progress.stop_stability_score).toFixed(2)} threshold.`);
   }
-  stopReasonLabel.textContent = `Current stop state: ${String(result.progress.stopped_by).replaceAll("_", " ")}.`;
+  stopReasonLabel.textContent = `Current stop state: ${String(progress.stopped_by || "pending").replaceAll("_", " ")}.`;
   renderList(stopReasonList, stopReasons);
 }
 
@@ -356,11 +441,25 @@ function exportSession() {
   window.open(`/sessions/${sessionId}/export`, "_blank", "noopener");
 }
 
+async function copyShareLink() {
+  if (!sessionId) {
+    return;
+  }
+  const link = new URL(window.location.origin);
+  link.searchParams.set("result", sessionId);
+  await navigator.clipboard.writeText(link.toString());
+  copyLinkBtn.textContent = "链接已复制";
+  setTimeout(() => {
+    copyLinkBtn.textContent = "复制专属结果链接";
+  }, 1600);
+}
+
 function updateProgress(progress, progressEstimate) {
-  const answered = progress.answered;
-  const maxItems = progressEstimate?.estimated_total_items ?? progress.max_items;
+  const answered = Number(progress.answered || 0);
+  progressLabel.dataset.answered = String(answered);
+  const maxItems = progressEstimate?.estimated_total_items ?? progress.max_items ?? Number(maxItemsInput.value);
   const displayAnswered = progressEstimate?.display_answered ?? (progress.complete ? answered : answered + 1);
-  const percent = progressEstimate?.estimated_completion_percent ?? (maxItems > 0 ? (displayAnswered / maxItems) * 100 : 0);
+  const percent = progressEstimate?.estimated_completion_percent ?? (maxItems > 0 ? Math.round((displayAnswered / maxItems) * 100) : 0);
   progressLabel.textContent = `${displayAnswered} / ${maxItems} estimated | ${percent}%`;
   if (progress.complete) {
     progressHint.textContent =
@@ -374,7 +473,7 @@ function updateProgress(progress, progressEstimate) {
 }
 
 function renderConfidence(progress, progressEstimate, standardErrors, uncertainty) {
-  meanStandardError.textContent = Number(uncertainty.mean_standard_error).toFixed(2);
+  meanStandardError.textContent = Number(uncertainty.mean_standard_error ?? 0).toFixed(2);
   confidenceReady.textContent = progress.standard_error_ready ? "Yes" : "No";
   stabilityScore.textContent = Number(progress.stability_score ?? 0).toFixed(2);
   stabilityStage.textContent = String(progress.stability_stage || "mixed");
@@ -382,31 +481,31 @@ function renderConfidence(progress, progressEstimate, standardErrors, uncertaint
   if (progress.stopped_by === "max_items_cap") {
     confidenceTitle.textContent = "Stopped at the item cap";
     confidenceCopy.textContent =
-      `The session reached the ${progress.max_items}-item cap before the current stop rule was satisfied. Mean standard error finished at ${Number(uncertainty.mean_standard_error).toFixed(2)}.`;
+      `The session reached the ${progress.max_items}-item cap before the current stop rule was satisfied. Mean standard error finished at ${Number(uncertainty.mean_standard_error ?? 0).toFixed(2)}.`;
   } else if (progress.stopped_by === "screening_plateau") {
     confidenceTitle.textContent = "Wrapped at the screening stage";
     confidenceCopy.textContent =
-      `The session moved past item ${progress.refinement_item_trigger} without clearing the early ${Number(progress.screening_stop_mean_standard_error).toFixed(2)} screen, so it stopped instead of chasing the stricter refinement target. Mean standard error finished at ${Number(uncertainty.mean_standard_error).toFixed(2)}.`;
+      `The session moved past item ${progress.refinement_item_trigger} without clearing the early ${Number(progress.screening_stop_mean_standard_error).toFixed(2)} screen, so it stopped instead of chasing the stricter refinement target. Mean standard error finished at ${Number(uncertainty.mean_standard_error ?? 0).toFixed(2)}.`;
   } else if (progress.stopped_by === "item_bank_exhausted") {
     confidenceTitle.textContent = "Item bank exhausted";
     confidenceCopy.textContent =
-      `The routed item pool ran out before another prompt could improve certainty. Mean standard error finished at ${Number(uncertainty.mean_standard_error).toFixed(2)}.`;
+      `The routed item pool ran out before another prompt could improve certainty. Mean standard error finished at ${Number(uncertainty.mean_standard_error ?? 0).toFixed(2)}.`;
   } else if (progress.stopped_by === "screening_threshold") {
-    confidenceTitle.textContent = "Early confidence screen passed";
+    confidenceTitle.textContent = "智能早停已触发";
     confidenceCopy.textContent =
-      `The session stopped before item ${progress.refinement_item_trigger} because the early ${Number(progress.screening_stop_mean_standard_error).toFixed(2)} screen and the current stability rule were both satisfied. Mean standard error is ${Number(uncertainty.mean_standard_error).toFixed(2)}.`;
+      `The session stopped before item ${progress.refinement_item_trigger} because the early-stop ${Number(progress.screening_stop_mean_standard_error).toFixed(2)} screen and the current stability rule were both satisfied. Mean standard error is ${Number(uncertainty.mean_standard_error ?? 0).toFixed(2)}.`;
   } else if (progress.stopped_by === "stability_threshold") {
     confidenceTitle.textContent = "Confidence threshold reached";
     confidenceCopy.textContent =
-      `The session moved past the early screen and stopped near the ${progressEstimate?.estimated_total_items ?? progress.max_items}-item estimate because the tighter ${Number(progress.effective_stop_mean_standard_error).toFixed(2)} refinement target and the stability rule were both satisfied. Mean standard error is ${Number(uncertainty.mean_standard_error).toFixed(2)} and the response pattern is ${String(progress.stability_stage || "stable")}.`;
-  } else if (progress.answered < progress.min_items) {
+      `The session moved past the early screen and stopped near the ${progressEstimate?.estimated_total_items ?? progress.max_items}-item estimate because the tighter ${Number(progress.effective_stop_mean_standard_error).toFixed(2)} refinement target and the stability rule were both satisfied. Mean standard error is ${Number(uncertainty.mean_standard_error ?? 0).toFixed(2)} and the response pattern is ${String(progress.stability_stage || "stable")}.`;
+  } else if ((progress.answered || 0) < (progress.min_items || 0)) {
     confidenceTitle.textContent = "Still collecting minimum evidence";
     confidenceCopy.textContent =
       `The engine is still inside the minimum item window (${progress.answered}/${progress.min_items}). Early stopping is disabled until that floor is met.`;
   } else if (progress.stopped_by === "screening_gate") {
-    confidenceTitle.textContent = "Still clearing the early screen";
+    confidenceTitle.textContent = "仍在判断是否可以早停";
     confidenceCopy.textContent =
-      `The engine is still trying to clear the early ${Number(progress.screening_stop_mean_standard_error).toFixed(2)} confidence screen before it decides whether a shorter session is enough.`;
+      `The engine is still trying to clear the early-stop ${Number(progress.screening_stop_mean_standard_error).toFixed(2)} confidence screen before it decides whether a shorter session is enough.`;
   } else if (progress.stopped_by === "stability_gate") {
     confidenceTitle.textContent = "Checking for a stable pattern";
     confidenceCopy.textContent =
@@ -414,11 +513,11 @@ function renderConfidence(progress, progressEstimate, standardErrors, uncertaint
   } else {
     confidenceTitle.textContent = "More evidence still needed";
     confidenceCopy.textContent =
-      `The session has not yet met the stopping rule. Mean standard error is ${Number(uncertainty.mean_standard_error).toFixed(2)} and response stability is ${Number(progress.stability_score ?? 0).toFixed(2)}, so the engine keeps routing more items while evidence improves.`;
+      `The session has not yet met the stopping rule. Mean standard error is ${Number(uncertainty.mean_standard_error ?? 0).toFixed(2)} and response stability is ${Number(progress.stability_score ?? 0).toFixed(2)}, so the engine keeps routing more items while evidence improves.`;
   }
 
   confidenceGrid.innerHTML = "";
-  for (const [trait, value] of Object.entries(standardErrors)) {
+  for (const [trait, value] of Object.entries(standardErrors || {})) {
     const article = document.createElement("article");
     const name = document.createElement("p");
     const score = document.createElement("p");
@@ -435,15 +534,15 @@ function renderConfidence(progress, progressEstimate, standardErrors, uncertaint
 }
 
 function renderResultProgress(progress, progressEstimate) {
-  const estimated = progressEstimate?.estimated_total_items ?? progress.max_items;
+  const estimated = progressEstimate?.estimated_total_items ?? progress.max_items ?? 0;
   const source = progressEstimate?.estimate_source === "lookup_table" ? "estimated path" : "custom path";
   resultProgress.textContent =
-    `Answered ${progress.answered} items | estimated total ${estimated} (${source}) | stability ${progress.stability_stage || "mixed"} | stop state ${String(progress.stopped_by).replaceAll("_", " ")}.`;
+    `Answered ${progress.answered ?? 0} items | estimated total ${estimated} (${source}) | stability ${progress.stability_stage || "mixed"} | stop state ${String(progress.stopped_by || "pending").replaceAll("_", " ")}.`;
 }
 
 function renderCoverage(counts, answeredItems) {
   coverageGrid.innerHTML = "";
-  for (const [trait, count] of Object.entries(counts)) {
+  for (const [trait, count] of Object.entries(counts || {})) {
     const article = document.createElement("article");
     const name = document.createElement("p");
     const value = document.createElement("p");
@@ -461,7 +560,7 @@ function renderCoverage(counts, answeredItems) {
 
 function renderScores(target, scores) {
   target.innerHTML = "";
-  for (const [trait, score] of Object.entries(scores)) {
+  for (const [trait, score] of Object.entries(scores || {})) {
     const dt = document.createElement("dt");
     const dd = document.createElement("dd");
     dt.textContent = trait;
@@ -498,4 +597,19 @@ function setResponseButtonsDisabled(disabled) {
   }
 }
 
-resetApp();
+async function boot() {
+  const params = new URLSearchParams(window.location.search);
+  resetApp(false);
+  const resultId = params.get("result");
+  if (!resultId) {
+    return;
+  }
+  try {
+    await loadSharedResult(resultId);
+  } catch (error) {
+    window.alert(error.message);
+    resetApp();
+  }
+}
+
+boot();

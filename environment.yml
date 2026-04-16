@@ -10,7 +10,10 @@ dependencies:
   - pytorch-cuda=12.4
   - numpy
   - requests
+  - sqlalchemy
   - fastapi
+  - openai
+  - python-dotenv
   - uvicorn
   - pytest
   - pyyaml

@@ -333,6 +333,60 @@ def test_stability_analyzer_does_not_mark_all_neutral_sequence_as_stable() -> No
     assert all_neutral["stability_stage"] != "stable"
 
 
+def test_stability_analyzer_does_not_mark_all_extreme_sequence_as_stable() -> None:
+    analyzer = StabilityAnalyzer()
+    all_extreme = analyzer.evaluate(
+        history=[
+            {"theta_before": [0.0], "theta_after": [0.18]},
+            {"theta_before": [0.18], "theta_after": [0.34]},
+            {"theta_before": [0.34], "theta_after": [0.47]},
+            {"theta_before": [0.47], "theta_after": [0.58]},
+        ],
+        path=[
+            {"dimension": "intellect", "response": 5, "keyed_response": 5},
+            {"dimension": "intellect", "response": 5, "keyed_response": 5},
+            {"dimension": "agreeableness", "response": 5, "keyed_response": 5},
+            {"dimension": "agreeableness", "response": 5, "keyed_response": 5},
+        ],
+        dimensions=["intellect", "agreeableness"],
+        stop_threshold=0.7,
+    )
+
+    assert all_extreme["components"]["response_diversity"] == 0.0
+    assert all_extreme["stability_score"] <= 0.55
+    assert all_extreme["stability_ready"] is False
+    assert all_extreme["stability_stage"] != "stable"
+
+
+def test_stability_analyzer_penalizes_fourteen_early_fives() -> None:
+    analyzer = StabilityAnalyzer()
+    path = []
+    history = []
+    theta = 0.0
+    for index in range(14):
+        next_theta = theta + 0.08
+        history.append({"theta_before": [theta], "theta_after": [next_theta]})
+        path.append(
+            {
+                "dimension": "intellect" if index % 2 == 0 else "agreeableness",
+                "response": 5,
+                "keyed_response": 5,
+            }
+        )
+        theta = next_theta
+
+    payload = analyzer.evaluate(
+        history=history,
+        path=path,
+        dimensions=["intellect", "agreeableness"],
+        stop_threshold=0.7,
+    )
+
+    assert payload["components"]["early_extreme_repetition"] is True
+    assert payload["stability_score"] <= 0.35
+    assert payload["stability_ready"] is False
+
+
 def test_lower_response_weight_produces_smaller_theta_shift() -> None:
     first_router = AdaptiveMMPIRouter(device="cpu", scoring_model="binary_2pl")
     second_router = AdaptiveMMPIRouter(device="cpu", scoring_model="binary_2pl")

@@ -1,0 +1,34 @@
+{
+  "Maine Coon": {
+    "name": "【战术统帅】缅因猫",
+    "image": "/static/cats/maine_coon.png"
+  },
+  "Siberian Black": {
+    "name": "【废土独狼】西伯利亚黑猫",
+    "image": "/static/cats/siberian_black.png"
+  },
+  "Orange Tabby": {
+    "name": "【狂战士】橘猫",
+    "image": "/static/cats/orange_tabby.png"
+  },
+  "Siamese": {
+    "name": "【赛博巫师】暹罗猫",
+    "image": "/static/cats/siamese.png"
+  },
+  "British Shorthair": {
+    "name": "【重装守卫】英国短毛猫",
+    "image": "/static/cats/british_shorthair.png"
+  },
+  "Ragdoll": {
+    "name": "【战地医疗】布偶猫",
+    "image": "/static/cats/ragdoll.png"
+  },
+  "Russian Blue": {
+    "name": "【暗夜刺客】俄罗斯蓝猫",
+    "image": "/static/cats/russian_blue.png"
+  },
+  "Scottish Fold": {
+    "name": "【新兵蛋子】苏格兰折耳猫",
+    "image": "/static/cats/scottish_fold.png"
+  }
+}

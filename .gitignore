@@ -13,6 +13,7 @@ venv/
 env/
 .env
 .env.*
+data/cat_psych.db
 
 # IDE and OS files
 .idea/

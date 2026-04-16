@@ -162,6 +162,70 @@ Cross-review status after the staged smart-precision change:
 - Low-risk note: if future experiments use `coverage_min_per_dimension = 3`, the refinement trigger should likely be raised above `15`.
 - Recommended next improvement: turn the refinement trigger into a configurable session parameter for benchmark work.
 
+## 5. Persistence And Persona Layer
+
+The project now includes a persistent completed-result layer on top of the existing in-memory/JSON session flow.
+
+### Result persistence split
+
+- Keep `SessionStore` for active/in-progress assessment sessions.
+- Use SQLite for completed/shareable persona results only.
+- Current SQLite file:
+
+```text
+data/cat_psych.db
+```
+
+- Current SQLAlchemy entrypoint:
+
+```text
+engine/database.py
+```
+
+- Current table:
+  - `user_sessions`
+
+### Result-generation policy
+
+- `GET /sessions/{session_id}/result` should:
+  1. confirm the session is complete,
+  2. check SQL for an existing persisted result,
+  3. reuse stored persona output if found,
+  4. otherwise generate persona output once,
+  5. write the result bundle to SQL,
+  6. and return the persisted payload.
+
+- `GET /results/{session_id}` is now the share/permalink path:
+  - SQL-only,
+  - no dependency on a still-live `SessionStore` session,
+  - intended for `?result=<session_id>` front-end entry.
+
+### Persona mapping layer
+
+- Persona/category metadata must come from:
+
+```text
+data/cat_mapping.json
+```
+
+- Do not hard-code the cat names or image paths in the frontend.
+- Static artwork is now expected under:
+
+```text
+web/cats/
+```
+
+### DeepSeek integration policy
+
+- `llm/deepseek_client.py` now owns the semantic persona call path.
+- It reads credentials from `.env` / environment:
+  - `DEEPSEEK_API_KEY`
+  - `DEEPSEEK_BASE_URL`
+  - `DEEPSEEK_MODEL`
+- `.env` is local-only and must never be committed.
+- Missing credentials or call failures must gracefully fall back to deterministic local persona output.
+- The app should remain usable even when DeepSeek is offline.
+
 Long-term direction:
 
 - Expand from mock `(a, b)` tensors to calibrated item parameters.

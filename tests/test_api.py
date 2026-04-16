@@ -2,11 +2,15 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
+import uuid
 
 from fastapi.testclient import TestClient
+from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker
 
 import api.app as api_module
 from api.app import app
+from engine.database import Base, UserSessionRecord
 from services import AssessmentSession, ProgressEstimator, ResultInterpreter, SessionStore
 
 
@@ -177,6 +181,51 @@ def test_session_progress_marks_neutral_only_pattern_as_unstable() -> None:
     assert progress["stability_stage"] != "stable"
 
 
+def test_session_progress_marks_all_extreme_pattern_as_unstable() -> None:
+    session = AssessmentSession(
+        scoring_model="binary_2pl",
+        max_items=8,
+        min_items=1,
+        coverage_min_per_dimension=0,
+        stop_mean_standard_error=30.0,
+        stop_stability_score=0.7,
+        device="cpu",
+    )
+    for _ in range(3):
+        item = session.next_question()
+        assert item is not None
+        session.submit_response(str(item["item_id"]), 5)
+
+    progress = session.progress()
+    assert progress["stability_score"] <= 0.55
+    assert progress["stability_ready"] is False
+    assert progress["stability_stage"] != "stable"
+
+
+def test_session_does_not_early_stop_after_fourteen_extreme_answers() -> None:
+    session = AssessmentSession(
+        scoring_model="binary_2pl",
+        max_items=30,
+        min_items=1,
+        coverage_min_per_dimension=0,
+        stop_mean_standard_error=30.0,
+        stop_stability_score=0.7,
+        device="cpu",
+    )
+
+    for _ in range(14):
+        item = session.next_question()
+        assert item is not None
+        session.submit_response(str(item["item_id"]), 5)
+
+    progress = session.progress()
+    assert session.is_complete is False
+    assert progress["answered"] == 14
+    assert progress["stopped_by"] == "stability_gate"
+    assert progress["stability_ready"] is False
+    assert progress["stability_score"] <= 0.35
+
+
 def test_result_interpreter_marks_low_evidence_traits() -> None:
     interpreter = ResultInterpreter(low_evidence_threshold=2)
     payload = interpreter.interpret(
@@ -216,6 +265,7 @@ def test_session_store_json_roundtrip(tmp_path: Path) -> None:
     first = session.next_question()
     assert first is not None
     session.submit_response(str(first["item_id"]), 4)
+    session.add_comment("我觉得自己平时又拧巴又上头。")
     store.save_session(session)
 
     reloaded = SessionStore(backend="json", ttl_seconds=3600, storage_dir=tmp_path / "sessions").get_session(session.session_id)
@@ -224,6 +274,8 @@ def test_session_store_json_roundtrip(tmp_path: Path) -> None:
     assert reloaded.path[0]["theta_after"] == reloaded.router.history[0]["theta_after"]
     assert reloaded.param_mode == "keyed"
     assert reloaded.router.key_aligned is True
+    assert reloaded.comment_submitted is True
+    assert reloaded.user_comments == ["我觉得自己平时又拧巴又上头。"]
 
 
 def test_snapshot_preserves_active_item(tmp_path: Path) -> None:
@@ -277,10 +329,24 @@ def test_session_store_expires_idle_sessions(tmp_path: Path) -> None:
 
 
 def test_fastapi_session_flow(tmp_path: Path, monkeypatch) -> None:
+    db_path = tmp_path / "cat_psych.db"
+    test_engine = create_engine(f"sqlite:///{db_path.as_posix()}", connect_args={"check_same_thread": False})
+    Base.metadata.create_all(bind=test_engine)
+    test_session_local = sessionmaker(autocommit=False, autoflush=False, bind=test_engine)
+
     monkeypatch.setattr(
         api_module,
         "SESSION_STORE",
         SessionStore(backend="json", ttl_seconds=3600, storage_dir=tmp_path / "sessions"),
+    )
+    monkeypatch.setattr(api_module, "SessionLocal", test_session_local)
+    monkeypatch.setattr(
+        api_module,
+        "analyze_personality",
+        lambda ocean_scores, user_comments: {
+            "category_key": "Siberian Black",
+            "analysis": f"Mock analysis for {len(user_comments)} comments.",
+        },
     )
     client = TestClient(app)
 
@@ -303,6 +369,7 @@ def test_fastapi_session_flow(tmp_path: Path, monkeypatch) -> None:
     assert created.status_code == 200
     payload = created.json()
     session_id = payload["session_id"]
+    assert str(uuid.UUID(session_id)) == session_id
     question = payload["next_question"]
     assert question["item_id"]
     assert payload["min_items"] == 1
@@ -333,6 +400,13 @@ def test_fastapi_session_flow(tmp_path: Path, monkeypatch) -> None:
     assert second_response.status_code == 200
     assert second_response.json()["complete"] is True
 
+    comment_response = client.post(
+        f"/sessions/{session_id}/comments",
+        json={"comment": "我平时确实是表面冷静，内心在疯狂写分支逻辑。"},
+    )
+    assert comment_response.status_code == 200
+    assert comment_response.json()["comment_submitted"] is True
+
     result = client.get(f"/sessions/{session_id}/result")
     assert result.status_code == 200
     result_payload = result.json()
@@ -349,6 +423,14 @@ def test_fastapi_session_flow(tmp_path: Path, monkeypatch) -> None:
     assert "progress_estimate" in result_payload
     assert "stability" in result_payload
     assert "stability_stage" in result_payload["progress"]
+    assert result_payload["cat_category"] == "Siberian Black"
+    assert result_payload["cat_name"] == "【废土独狼】西伯利亚黑猫"
+    assert result_payload["cat_image"] == "/static/cats/siberian_black.png"
+    assert "Mock analysis" in result_payload["cat_analysis"]
+
+    repeated = client.get(f"/sessions/{session_id}/result")
+    assert repeated.status_code == 200
+    assert repeated.json()["cat_analysis"] == result_payload["cat_analysis"]
 
     exported = client.get(f"/sessions/{session_id}/export")
     assert exported.status_code == 200
@@ -357,12 +439,21 @@ def test_fastapi_session_flow(tmp_path: Path, monkeypatch) -> None:
     assert exported.json()["param_mode"] == "keyed"
     assert exported.json()["progress_estimate"]["estimate_source"] == "fallback_max_items"
     assert "stability" in exported.json()
-
-    restarted = client.post(f"/sessions/{session_id}/restart")
-    assert restarted.status_code == 200
-    assert restarted.json()["progress"]["answered"] == 0
-    assert restarted.json()["next_question"]["item_id"]
+    assert exported.json()["cat_category"] == "Siberian Black"
 
     deleted = client.delete(f"/sessions/{session_id}")
     assert deleted.status_code == 200
     assert deleted.json()["deleted"] is True
+
+    shared = client.get(f"/results/{session_id}")
+    assert shared.status_code == 200
+    assert shared.json()["cat_name"] == "【废土独狼】西伯利亚黑猫"
+    assert shared.json()["session_id"] == session_id
+
+    restarted = client.post(f"/sessions/{session_id}/restart")
+    assert restarted.status_code == 404
+
+    with test_session_local() as db:
+        persisted = db.get(UserSessionRecord, session_id)
+        assert persisted is not None
+        assert persisted.cat_category == "Siberian Black"
