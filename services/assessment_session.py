@@ -1,7 +1,10 @@
 from __future__ import annotations
 
+import json
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
+from functools import lru_cache
+from pathlib import Path
 from uuid import uuid4
 
 from engine import AdaptiveMMPIRouter, ClassicalBigFiveScorer, DISCLAIMER, resolve_param_source
@@ -14,13 +17,23 @@ SCREENING_STOP_MEAN_STANDARD_ERROR = 0.85
 STABILITY_SE_RELAXATION = 0.1
 CONFIRMATION_WINDOW_ITEMS = 2
 CONFIRMATION_MEAN_SE_TOLERANCE = 0.02
+CONFIRMATION_STABILITY_SCORE_FLOOR_RELAXATION = 0.2
 
 CHECKPOINTS = (
-    {"answered": 12, "target_mean_standard_error": 0.80},
-    {"answered": 15, "target_mean_standard_error": 0.85},
-    {"answered": 18, "target_mean_standard_error": 0.82},
+    {"answered": 12, "target_mean_standard_error": 0.95},
+    {"answered": 15, "target_mean_standard_error": 0.90},
+    {"answered": 18, "target_mean_standard_error": 0.85},
 )
 FINAL_SCREENING_CHECKPOINT = CHECKPOINTS[-1]["answered"]
+
+
+@lru_cache(maxsize=1)
+def load_item_translations() -> dict[str, str]:
+    target = Path(__file__).resolve().parents[1] / "data" / "ipip_items_zh.json"
+    payload = json.loads(target.read_text(encoding="utf-8"))
+    if len(payload) != 50:
+        raise ValueError("ipip_items_zh.json must contain 50 translated items.")
+    return {str(item_id): str(text_zh) for item_id, text_zh in payload.items()}
 
 
 @dataclass
@@ -58,6 +71,7 @@ class AssessmentSession:
         self.progress_estimator = ProgressEstimator()
         self.interpreter = ResultInterpreter()
         self.stability_analyzer = StabilityAnalyzer()
+        self.item_translations = load_item_translations()
         self.responses: dict[str, int] = {}
         self.path: list[dict[str, object]] = []
         self.active_item: dict[str, object] | None = None
@@ -115,7 +129,11 @@ class AssessmentSession:
             refined_stop_mean_standard_error if refinement_active else screening_stop_mean_standard_error
         )
         se_threshold_met = uncertainty["mean_standard_error"] <= effective_stop_mean_standard_error
-        confirmation_passed = self._confirmation_passes(uncertainty=uncertainty, stability=stability)
+        confirmation_passed = (
+            self.confirmation_result == "confirmed"
+            and self._confirmation_passes(uncertainty=uncertainty, stability=stability)
+        )
+        pending_checkpoint = self._checkpoint_ready(uncertainty=uncertainty, stability=stability)
 
         if answered >= self.max_items:
             complete = True
@@ -143,16 +161,16 @@ class AssessmentSession:
             precision_mode = "confirmation"
         elif self.early_stop_candidate:
             complete = False
-            stopped_by = "screening_candidate"
-            precision_mode = "screening"
+            stopped_by = "confirmation_window"
+            precision_mode = "confirmation"
         elif answered > FINAL_SCREENING_CHECKPOINT and not screening_threshold_met:
             complete = True
             stopped_by = "screening_plateau"
             precision_mode = "screening_plateau"
-        elif self._checkpoint_ready(uncertainty=uncertainty, stability=stability) is not None:
+        elif pending_checkpoint is not None:
             complete = False
-            stopped_by = "screening_candidate"
-            precision_mode = "screening"
+            stopped_by = "confirmation_window"
+            precision_mode = "confirmation"
         elif not screening_threshold_met:
             complete = False
             stopped_by = "screening_gate"
@@ -226,12 +244,20 @@ class AssessmentSession:
             confirmation_items_remaining=int(progress["confirmation_items_remaining"]),
         )
 
+    def _text_zh_for_item(self, item_id: str) -> str:
+        try:
+            return self.item_translations[item_id]
+        except KeyError as exc:
+            raise ValueError(f"Missing Chinese translation for item {item_id}.") from exc
+
     def next_question(self) -> dict[str, object] | None:
         self.touch()
         if self.is_complete:
             self.active_item = None
             return None
         if self.active_item is not None:
+            if "text_zh" not in self.active_item and self.active_item.get("item_id") is not None:
+                self.active_item["text_zh"] = self._text_zh_for_item(str(self.active_item["item_id"]))
             self.active_item["progress"] = self.progress()
             self.active_item["progress_estimate"] = self.progress_estimate()
             return self.active_item
@@ -243,6 +269,7 @@ class AssessmentSession:
             "session_id": self.session_id,
             "item_id": item["id"],
             "text": item["text"],
+            "text_zh": self._text_zh_for_item(str(item["id"])),
             "dimension": item["dimension"],
             "key": item["key"],
             "response_scale": item["response_scale"],
@@ -268,6 +295,7 @@ class AssessmentSession:
                 "step": self.answered_count,
                 "item_id": item_id,
                 "text": current["text"],
+                "text_zh": current["text_zh"],
                 "dimension": current["dimension"],
                 "key": current["key"],
                 "response": response,
@@ -413,6 +441,7 @@ class AssessmentSession:
                     "step": int(step.get("step", len(session.path) + 1)),
                     "item_id": item_id,
                     "text": step["text"],
+                    "text_zh": str(step.get("text_zh") or session._text_zh_for_item(item_id)),
                     "dimension": step["dimension"],
                     "key": int(step["key"]),
                     "response": response,
@@ -422,6 +451,8 @@ class AssessmentSession:
             )
         active_item = payload.get("active_item")
         session.active_item = dict(active_item) if isinstance(active_item, dict) else None
+        if session.active_item is not None and "text_zh" not in session.active_item and session.active_item.get("item_id") is not None:
+            session.active_item["text_zh"] = session._text_zh_for_item(str(session.active_item["item_id"]))
         session.user_comments = [str(comment) for comment in payload.get("user_comments", [])]
         session.comment_submitted = bool(payload.get("comment_submitted", bool(session.user_comments)))
         session.updated_at = str(payload.get("updated_at") or datetime.now(UTC).isoformat())
@@ -433,19 +464,19 @@ class AssessmentSession:
         uncertainty: dict[str, float | bool],
         stability: dict[str, object],
     ) -> dict[str, int | float] | None:
-        if self.early_stop_candidate or self.confirmation_result == "confirmed":
+        if self.early_stop_candidate:
             return None
         if self.answered_count <= 0:
             return None
         counts = self.router.dimension_answer_counts()
         if min(counts.values()) < self.coverage_min_per_dimension:
             return None
-        if not bool(stability["stability_ready"]):
+        if float(stability["stability_score"]) < self._minimum_confirmation_stability_score():
             return None
 
-        for checkpoint in CHECKPOINTS:
+        for checkpoint in reversed(CHECKPOINTS):
             answered = int(checkpoint["answered"])
-            if self.answered_count != answered:
+            if self.answered_count < answered:
                 continue
             if answered in self.attempted_candidate_checkpoints:
                 continue
@@ -495,12 +526,21 @@ class AssessmentSession:
         allowed_mean_se = float(self.candidate_snapshot["target_mean_standard_error"]) + CONFIRMATION_MEAN_SE_TOLERANCE
         return (
             float(uncertainty["mean_standard_error"]) <= allowed_mean_se
-            and bool(stability["stability_ready"])
+            and float(stability["stability_score"]) >= self._minimum_confirmation_stability_score()
             and top_trait == str(self.candidate_snapshot["top_trait"])
             and lowest_trait == str(self.candidate_snapshot["lowest_trait"])
         )
 
+    def _minimum_confirmation_stability_score(self) -> float:
+        return max(
+            0.0,
+            float(self.stop_stability_score) - CONFIRMATION_STABILITY_SCORE_FLOOR_RELAXATION,
+        )
+
     def _advance_candidate_state(self) -> None:
+        if self.confirmation_result == "confirmed" and not self._confirmation_passes():
+            self._clear_candidate()
+
         if self.early_stop_candidate and self.confirmation_items_remaining > 0:
             self.confirmation_items_remaining = max(0, self.confirmation_items_remaining - 1)
             if self.confirmation_items_remaining == 0:

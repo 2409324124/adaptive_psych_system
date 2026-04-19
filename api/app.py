@@ -1,7 +1,11 @@
 from __future__ import annotations
 
 import json
+import logging
 import os
+import threading
+from contextlib import contextmanager
+from dataclasses import dataclass
 from functools import lru_cache
 from pathlib import Path
 
@@ -21,6 +25,15 @@ from services import SessionStore
 ROOT = Path(__file__).resolve().parents[1]
 WEB_DIR = ROOT / "web"
 DATA_DIR = ROOT / "data"
+LOGGER = logging.getLogger(__name__)
+@dataclass
+class PersistLockEntry:
+    lock: threading.Lock
+    users: int = 0
+
+
+_PERSIST_LOCKS: dict[str, PersistLockEntry] = {}
+_PERSIST_LOCKS_GUARD = threading.Lock()
 
 SESSION_STORE = SessionStore(
     backend=os.getenv("CAT_PSYCH_SESSION_BACKEND", "memory"),
@@ -156,34 +169,75 @@ def get_persisted_record(session_id: str, db: Session) -> UserSessionRecord | No
     return db.get(UserSessionRecord, session_id)
 
 
-def persist_session_result(session, db: Session) -> dict[str, object]:
-    result_payload = session.result()
-    if not session.is_complete:
-        return result_payload
+@contextmanager
+def persist_lock(session_id: str):
+    with _PERSIST_LOCKS_GUARD:
+        entry = _PERSIST_LOCKS.get(session_id)
+        if entry is None:
+            entry = PersistLockEntry(lock=threading.Lock())
+            _PERSIST_LOCKS[session_id] = entry
+        entry.users += 1
 
-    llm_result = analyze_personality(
-        ocean_scores=result_payload["irt_t_scores"],
-        user_comments=result_payload.get("user_comments", []),
-        structured_summary=result_payload.get("interpretation", {}).get("structured_summary"),
-    )
-    persisted = UserSessionRecord(
-        session_id=session.session_id,
-        ocean_scores=result_payload["irt_t_scores"],
-        cat_category=llm_result["category_key"],
-        llm_analysis=llm_result["analysis"],
-        raw_responses=build_persisted_snapshot(result_payload),
-    )
-    db.add(persisted)
+    entry.lock.acquire()
     try:
-        db.commit()
-        db.refresh(persisted)
-        return combine_db_record(persisted)
-    except IntegrityError:
-        db.rollback()
+        yield
+    finally:
+        entry.lock.release()
+        with _PERSIST_LOCKS_GUARD:
+            current = _PERSIST_LOCKS.get(session_id)
+            if current is entry:
+                entry.users -= 1
+                if entry.users == 0:
+                    _PERSIST_LOCKS.pop(session_id, None)
+
+
+def safe_delete_runtime_session(session_id: str) -> None:
+    try:
+        SESSION_STORE.delete_session(session_id)
+    except Exception:
+        LOGGER.warning(
+            "Failed to purge runtime session after result persistence.",
+            extra={"session_id": session_id},
+            exc_info=True,
+        )
+
+
+def persist_session_result(session, db: Session) -> dict[str, object]:
+    if not session.is_complete:
+        return session.result()
+
+    with persist_lock(session.session_id):
         record = get_persisted_record(session.session_id, db)
         if record is not None:
+            safe_delete_runtime_session(session.session_id)
             return combine_db_record(record)
-        raise
+
+        result_payload = session.result()
+        llm_result = analyze_personality(
+            ocean_scores=result_payload["irt_t_scores"],
+            user_comments=result_payload.get("user_comments", []),
+            structured_summary=result_payload.get("interpretation", {}).get("structured_summary"),
+        )
+        persisted = UserSessionRecord(
+            session_id=session.session_id,
+            ocean_scores=result_payload["irt_t_scores"],
+            cat_category=llm_result["category_key"],
+            llm_analysis=llm_result["analysis"],
+            raw_responses=build_persisted_snapshot(result_payload),
+        )
+        db.add(persisted)
+        try:
+            db.commit()
+            db.refresh(persisted)
+            safe_delete_runtime_session(session.session_id)
+            return combine_db_record(persisted)
+        except IntegrityError:
+            db.rollback()
+            record = get_persisted_record(session.session_id, db)
+            if record is not None:
+                safe_delete_runtime_session(session.session_id)
+                return combine_db_record(record)
+            raise
 
 
 def get_result_payload(session_id: str, db: Session) -> dict[str, object]:
@@ -191,7 +245,14 @@ def get_result_payload(session_id: str, db: Session) -> dict[str, object]:
     if record is not None:
         return combine_db_record(record)
 
-    session = get_session(session_id)
+    try:
+        session = get_session(session_id)
+    except HTTPException as exc:
+        if exc.status_code == 404:
+            record = get_persisted_record(session_id, db)
+            if record is not None:
+                return combine_db_record(record)
+        raise
     if not session.is_complete:
         return session.result()
     return persist_session_result(session, db)

@@ -307,6 +307,21 @@ button:disabled {
   opacity: 0.75;
 }
 
+.bubble-text {
+  margin: 0;
+}
+
+.bubble-secondary {
+  margin: 6px 0 0;
+  font-size: 14px;
+  line-height: 1.5;
+  color: #617169;
+}
+
+.bubble--answer .bubble-secondary {
+  color: rgba(255, 255, 255, 0.82);
+}
+
 .question-panel {
   min-width: 0;
   padding: 20px;
@@ -328,9 +343,16 @@ button:disabled {
 }
 
 .question-text {
-  margin-bottom: 18px;
+  margin-bottom: 8px;
   font-size: 28px;
   line-height: 1.25;
+}
+
+.question-text-en {
+  margin: 0 0 18px;
+  font-size: 16px;
+  line-height: 1.5;
+  color: #617169;
 }
 
 .responses {
