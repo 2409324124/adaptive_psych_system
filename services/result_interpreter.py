@@ -2,14 +2,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-
-TRAIT_LABELS = {
-    "extraversion": "Extraversion",
-    "agreeableness": "Agreeableness",
-    "conscientiousness": "Conscientiousness",
-    "emotional_stability": "Emotional stability",
-    "intellect": "Intellect / openness",
-}
+from engine.constants import TRAIT_LABELS
 
 
 @dataclass(frozen=True)
@@ -46,45 +39,59 @@ class ResultInterpreter:
         ]
 
         if standout:
-            overview = (
-                f"Current responses lean most strongly toward {TRAIT_LABELS.get(top_trait, top_trait).lower()}."
-            )
+            overview = f"这一轮最突出的信号，落在「{TRAIT_LABELS.get(top_trait, top_trait)}」这一侧。"
         elif lower:
-            overview = (
-                f"Current responses are relatively lower on {TRAIT_LABELS.get(bottom_trait, bottom_trait).lower()} than on the other tracked traits."
-            )
+            overview = f"这一轮里相对偏低的信号，主要落在「{TRAIT_LABELS.get(bottom_trait, bottom_trait)}」这一侧。"
         else:
-            overview = (
-                "Current responses cluster near the middle range, with no single trait standing far away from the rest."
-            )
+            overview = "这轮回答整体还比较居中，没有哪一个维度明显把其他维度拉开。"
 
         range_summary = (
-            f"Highest current IRT tendency is {TRAIT_LABELS.get(top_trait, top_trait)} ({top_score:.1f}); "
-            f"lowest is {TRAIT_LABELS.get(bottom_trait, bottom_trait)} ({bottom_score:.1f})."
+            f"当前 IRT 倾向里，最高的是「{TRAIT_LABELS.get(top_trait, top_trait)}」({top_score:.1f})，"
+            f"最低的是「{TRAIT_LABELS.get(bottom_trait, bottom_trait)}」({bottom_score:.1f})。"
         )
 
         cautions = []
         if low_evidence_traits:
-            cautions.append(
-                "Lower evidence is still present for "
-                + ", ".join(low_evidence_traits)
-                + ". Treat those readings as provisional."
-            )
-        cautions.append(
-            "These outputs are screening-oriented tendency estimates, not clinical findings."
-        )
+            cautions.append("以下维度证据还偏少：" + "、".join(low_evidence_traits) + "。相关解读先按暂定信号看待。")
+        cautions.append("这是一份风格化筛查结果，不等同于临床诊断。")
+
+        structured_summary = {
+            "headline_trait": self._trait_payload(top_trait, top_score),
+            "lowest_trait": self._trait_payload(bottom_trait, bottom_score),
+            "high_traits": [
+                self._trait_payload(trait, score)
+                for trait, score in ranked
+                if score >= self.standout_threshold
+            ],
+            "low_traits": [
+                self._trait_payload(trait, score)
+                for trait, score in reversed(ranked)
+                if score <= self.low_threshold
+            ],
+            "cautions": cautions,
+            "evidence_level": "暂定" if low_evidence_traits else "中等偏稳",
+            "low_evidence_traits": low_evidence_traits,
+        }
 
         return {
             "overview": overview,
             "range_summary": range_summary,
-            "highlights": standout or ["No trait is currently far above the mid-range band."],
-            "lowlights": lower or ["No trait is currently far below the mid-range band."],
+            "highlights": standout or ["暂时没有哪个维度明显高出中段。"],
+            "lowlights": lower or ["暂时没有哪个维度明显低出中段。"],
             "cautions": cautions,
             "low_evidence_traits": low_evidence_traits,
+            "structured_summary": structured_summary,
         }
 
     def _trait_summary(self, trait: str, score: float, *, direction: str) -> str:
         label = TRAIT_LABELS.get(trait, trait)
         if direction == "high":
-            return f"{label} is currently on the higher side ({score:.1f})."
-        return f"{label} is currently on the lower side ({score:.1f})."
+            return f"「{label}」目前偏高一些（{score:.1f}）。"
+        return f"「{label}」目前偏低一些（{score:.1f}）。"
+
+    def _trait_payload(self, trait: str, score: float) -> dict[str, object]:
+        return {
+            "trait": trait,
+            "label": TRAIT_LABELS.get(trait, trait),
+            "score": round(score, 1),
+        }

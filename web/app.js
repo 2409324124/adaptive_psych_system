@@ -73,6 +73,8 @@ const evidenceStageCopy = {
   "building minimum evidence": "Building minimum evidence",
   "coverage in progress": "Coverage in progress",
   "early confidence screening": "Early confidence screening",
+  "early stop candidate": "Early-stop candidate",
+  "confirmation window": "Confirmation check in progress",
   "confidence refining": "Confidence refining",
   "stability refining": "Stability refining",
   "confidence target reached": "Confidence target reached",
@@ -132,6 +134,7 @@ function resetApp(clearResultParam = true) {
   resultProgress.textContent = "";
   resultNotice.textContent = "";
   catImage.removeAttribute("src");
+  catImage.style.objectPosition = "";
   catName.textContent = "";
   catAnalysis.textContent = "";
   shareHash.textContent = "";
@@ -364,6 +367,7 @@ function renderResultPayload(result) {
 function renderCatResult(result) {
   catImage.src = result.cat_image || "";
   catImage.hidden = !result.cat_image;
+  catImage.style.objectPosition = result.cat_image_position || "50% 50%";
   catName.textContent = result.cat_name || "猫娘结果准备中";
   catAnalysis.textContent = result.cat_analysis || "这份结果还没有生成角色化文案。";
   shareHash.textContent = result.session_id || "";
@@ -413,6 +417,11 @@ function renderExperimentContext(result) {
     stopReasons.push(`Early screening passed the ${Number(progress.screening_stop_mean_standard_error).toFixed(2)} threshold.`);
   } else {
     stopReasons.push(`Early screening is still above ${Number(progress.screening_stop_mean_standard_error).toFixed(2)}.`);
+  }
+  if (progress.early_stop_candidate) {
+    stopReasons.push(`Checkpoint ${progress.candidate_checkpoint} triggered an early-stop candidate; ${progress.confirmation_items_remaining} confirmation item(s) remain.`);
+  } else if (progress.stopped_by === "screening_confirmed") {
+    stopReasons.push("The early-stop candidate held through the confirmation window and was promoted to a confirmed stop.");
   }
   if (progress.precision_mode === "refining") {
     if (progress.standard_error_ready) {
@@ -490,6 +499,18 @@ function renderConfidence(progress, progressEstimate, standardErrors, uncertaint
     confidenceTitle.textContent = "Item bank exhausted";
     confidenceCopy.textContent =
       `The routed item pool ran out before another prompt could improve certainty. Mean standard error finished at ${Number(uncertainty.mean_standard_error ?? 0).toFixed(2)}.`;
+  } else if (progress.stopped_by === "screening_candidate") {
+    confidenceTitle.textContent = "已触发早停候选";
+    confidenceCopy.textContent =
+      `Checkpoint ${progress.candidate_checkpoint || "?"} already looks strong enough for an early stop, but the engine is waiting to start the final confirmation pass before ending the session.`;
+  } else if (progress.stopped_by === "confirmation_window") {
+    confidenceTitle.textContent = "补 2 题确认中";
+    confidenceCopy.textContent =
+      `The engine is using the last ${progress.confirmation_items_remaining} confirmation item(s) to verify that precision and response stability still hold after the early-stop candidate fired.`;
+  } else if (progress.stopped_by === "screening_confirmed") {
+    confidenceTitle.textContent = "智能早停已确认";
+    confidenceCopy.textContent =
+      `The session cleared checkpoint ${progress.candidate_checkpoint || progress.refinement_item_trigger}, completed the confirmation window, and still satisfied the early-stop confidence rule. Mean standard error is ${Number(uncertainty.mean_standard_error ?? 0).toFixed(2)}.`;
   } else if (progress.stopped_by === "screening_threshold") {
     confidenceTitle.textContent = "智能早停已触发";
     confidenceCopy.textContent =
@@ -537,7 +558,7 @@ function renderResultProgress(progress, progressEstimate) {
   const estimated = progressEstimate?.estimated_total_items ?? progress.max_items ?? 0;
   const source = progressEstimate?.estimate_source === "lookup_table" ? "estimated path" : "custom path";
   resultProgress.textContent =
-    `Answered ${progress.answered ?? 0} items | estimated total ${estimated} (${source}) | stability ${progress.stability_stage || "mixed"} | stop state ${String(progress.stopped_by || "pending").replaceAll("_", " ")}.`;
+    `Answered ${progress.answered ?? 0} items | estimated total ${estimated} (${source}) | stability ${progress.stability_stage || "mixed"} | stop state ${String(progress.stop_state || progress.stopped_by || "pending").replaceAll("_", " ")}.`;
 }
 
 function renderCoverage(counts, answeredItems) {

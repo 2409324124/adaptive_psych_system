@@ -12,6 +12,7 @@ from pydantic import BaseModel, Field
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
+from engine.constants import DISCLAIMER
 from engine.database import SessionLocal, UserSessionRecord
 from llm.deepseek_client import analyze_personality
 from services import SessionStore
@@ -20,6 +21,7 @@ from services import SessionStore
 ROOT = Path(__file__).resolve().parents[1]
 WEB_DIR = ROOT / "web"
 DATA_DIR = ROOT / "data"
+
 SESSION_STORE = SessionStore(
     backend=os.getenv("CAT_PSYCH_SESSION_BACKEND", "memory"),
     ttl_seconds=int(os.getenv("CAT_PSYCH_SESSION_TTL_SECONDS", "7200")),
@@ -72,6 +74,7 @@ def enrich_with_cat_metadata(payload: dict[str, object], category_key: str | Non
         "cat_category": category_key,
         "cat_name": category["name"] if category else None,
         "cat_image": category["image"] if category else None,
+        "cat_image_position": category.get("image_position") if category else None,
         "cat_analysis": analysis,
     }
 
@@ -142,18 +145,18 @@ def combine_db_record(record: UserSessionRecord) -> dict[str, object]:
         "param_path": raw.get("parameter_summary", {}).get("param_path"),
         "key_aligned": raw.get("parameter_summary", {}).get("key_aligned"),
         "param_metadata": raw.get("parameter_summary", {}).get("param_metadata", {}),
-        "disclaimer": raw.get("disclaimer")
-        or "本系统仅作为心理特质筛查与辅助参考工具，绝对不可替代专业精神科临床诊断。",
+        "runtime_state": "missing",
+        "persistence_state": "persisted",
+        "disclaimer": raw.get("disclaimer") or DISCLAIMER,
     }
     return enrich_with_cat_metadata(base, record.cat_category, record.llm_analysis)
 
 
-def get_or_create_persisted_result(session_id: str, db: Session) -> dict[str, object]:
-    record = db.get(UserSessionRecord, session_id)
-    if record is not None:
-        return combine_db_record(record)
+def get_persisted_record(session_id: str, db: Session) -> UserSessionRecord | None:
+    return db.get(UserSessionRecord, session_id)
 
-    session = get_session(session_id)
+
+def persist_session_result(session, db: Session) -> dict[str, object]:
     result_payload = session.result()
     if not session.is_complete:
         return result_payload
@@ -161,8 +164,8 @@ def get_or_create_persisted_result(session_id: str, db: Session) -> dict[str, ob
     llm_result = analyze_personality(
         ocean_scores=result_payload["irt_t_scores"],
         user_comments=result_payload.get("user_comments", []),
+        structured_summary=result_payload.get("interpretation", {}).get("structured_summary"),
     )
-    enriched = enrich_with_cat_metadata(result_payload, llm_result["category_key"], llm_result["analysis"])
     persisted = UserSessionRecord(
         session_id=session.session_id,
         ocean_scores=result_payload["irt_t_scores"],
@@ -177,10 +180,21 @@ def get_or_create_persisted_result(session_id: str, db: Session) -> dict[str, ob
         return combine_db_record(persisted)
     except IntegrityError:
         db.rollback()
-        record = db.get(UserSessionRecord, session_id)
+        record = get_persisted_record(session.session_id, db)
         if record is not None:
             return combine_db_record(record)
         raise
+
+
+def get_result_payload(session_id: str, db: Session) -> dict[str, object]:
+    record = get_persisted_record(session_id, db)
+    if record is not None:
+        return combine_db_record(record)
+
+    session = get_session(session_id)
+    if not session.is_complete:
+        return session.result()
+    return persist_session_result(session, db)
 
 
 @app.get("/")
@@ -241,10 +255,14 @@ def submit_response(session_id: str, payload: ResponseRequest) -> dict[str, obje
 
 @app.post("/sessions/{session_id}/comments")
 def submit_comment(session_id: str, payload: CommentRequest, db: Session = Depends(get_db)) -> dict[str, object]:
-    existing = db.get(UserSessionRecord, session_id)
+    existing = get_persisted_record(session_id, db)
     if existing is not None:
         raise HTTPException(status_code=409, detail="Result already finalized for this session.")
+
     session = get_session(session_id)
+    if not session.is_complete:
+        raise HTTPException(status_code=409, detail="Comments can only be submitted after the assessment is complete.")
+
     try:
         accepted = session.add_comment(payload.comment)
     except ValueError as exc:
@@ -255,15 +273,12 @@ def submit_comment(session_id: str, payload: CommentRequest, db: Session = Depen
 
 @app.get("/sessions/{session_id}/result")
 def result(session_id: str, db: Session = Depends(get_db)) -> dict[str, object]:
-    session = get_session(session_id)
-    if not session.is_complete:
-        return session.result()
-    return get_or_create_persisted_result(session_id, db)
+    return get_result_payload(session_id, db)
 
 
 @app.get("/results/{session_id}")
 def persisted_result(session_id: str, db: Session = Depends(get_db)) -> dict[str, object]:
-    record = db.get(UserSessionRecord, session_id)
+    record = get_persisted_record(session_id, db)
     if record is None:
         raise HTTPException(status_code=404, detail="Unknown session_id")
     return combine_db_record(record)
@@ -271,14 +286,16 @@ def persisted_result(session_id: str, db: Session = Depends(get_db)) -> dict[str
 
 @app.get("/sessions/{session_id}/export")
 def export_result(session_id: str, db: Session = Depends(get_db)) -> JSONResponse:
-    session = get_session(session_id)
-    content = session.result() if not session.is_complete else get_or_create_persisted_result(session_id, db)
+    content = get_result_payload(session_id, db)
     headers = {"Content-Disposition": f'attachment; filename="cat-psych-{session_id}.json"'}
     return JSONResponse(content=content, headers=headers)
 
 
 @app.post("/sessions/{session_id}/restart")
-def restart_session(session_id: str) -> dict[str, object]:
+def restart_session(session_id: str, db: Session = Depends(get_db)) -> dict[str, object]:
+    existing = get_persisted_record(session_id, db)
+    if existing is not None:
+        raise HTTPException(status_code=409, detail="Finalized sessions cannot be restarted. Create a new session instead.")
     try:
         session = SESSION_STORE.restart_session(session_id)
     except KeyError as exc:

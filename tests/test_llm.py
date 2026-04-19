@@ -1,5 +1,8 @@
 from __future__ import annotations
 
+import json
+from pathlib import Path
+
 from llm.deepseek_client import analyze_personality
 from llm.prompt_templates import CAT_CATEGORY_KEYS
 
@@ -19,3 +22,20 @@ def test_deepseek_fallback_returns_valid_category(monkeypatch) -> None:
 
     assert payload["category_key"] in CAT_CATEGORY_KEYS
     assert payload["analysis"]
+    assert payload["category_key"] not in payload["analysis"]
+
+
+def test_cat_mapping_contains_persona_template_fields() -> None:
+    mapping_path = Path(__file__).resolve().parents[1] / "data" / "cat_mapping.json"
+    payload = json.loads(mapping_path.read_text(encoding="utf-8"))
+
+    assert set(payload.keys()) == set(CAT_CATEGORY_KEYS)
+    for category, profile in payload.items():
+        assert profile["name"]
+        assert profile["image"].startswith("/static/cats/")
+        assert "%" in profile["image_position"]
+        assert profile["persona_seed"]
+        assert profile["tone"]
+        assert len(profile["supporting_motifs"]) == 3
+        assert len(profile["taboo_phrases"]) == 4
+        assert category not in profile["persona_seed"]

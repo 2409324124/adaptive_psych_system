@@ -50,6 +50,8 @@ def test_progress_estimator_falls_back_for_unknown_combo() -> None:
         standard_error_ready=False,
         stability_ready=False,
         stopped_by="min_items_gate",
+        early_stop_candidate=False,
+        confirmation_items_remaining=0,
     )
     assert estimate["estimated_total_items"] == 12
     assert estimate["estimate_source"] == "fallback_max_items"
@@ -81,7 +83,7 @@ def test_session_does_not_stop_before_min_items() -> None:
     assert session.is_complete is False
 
 
-def test_session_can_stop_early_when_uncertainty_goal_is_met() -> None:
+def test_session_does_not_stop_before_checkpoints_even_when_uncertainty_is_low() -> None:
     session = AssessmentSession(
         scoring_model="binary_2pl",
         max_items=12,
@@ -94,10 +96,11 @@ def test_session_can_stop_early_when_uncertainty_goal_is_met() -> None:
     first = session.next_question()
     assert first is not None
     session.submit_response(str(first["item_id"]), 5)
-    assert session.is_complete is True
+    assert session.is_complete is False
+    assert session.progress()["stopped_by"] in {"screening_gate", "stability_gate"}
 
 
-def test_session_can_finish_at_screening_stage_when_stable_and_precise() -> None:
+def test_session_checkpoint_starts_confirmation_window_instead_of_stopping_immediately() -> None:
     session = AssessmentSession(
         scoring_model="binary_2pl",
         max_items=30,
@@ -107,20 +110,115 @@ def test_session_can_finish_at_screening_stage_when_stable_and_precise() -> None
         stop_stability_score=0.7,
         device="cpu",
     )
-    session.router.answered_indices = set(range(10))
+    session.router.answered_indices = set(range(12))
     session.router.dimension_answer_counts = lambda: {dimension: 2 for dimension in session.router.dimensions}
-    session.router.uncertainty_summary = lambda: {"mean_standard_error": 0.82, "max_standard_error": 0.9, "confidence_ready": False}
+    session.router.uncertainty_summary = lambda: {"mean_standard_error": 0.79, "max_standard_error": 0.9, "confidence_ready": False}
     session.stability = lambda: {"stability_score": 0.88, "stability_ready": True, "stability_stage": "stable"}
+
+    session._advance_candidate_state()
+    progress = session.progress()
+
+    assert progress["complete"] is False
+    assert progress["stopped_by"] == "confirmation_window"
+    assert progress["early_stop_candidate"] is True
+    assert progress["candidate_checkpoint"] == 12
+    assert progress["confirmation_items_remaining"] == 2
+    assert progress["precision_mode"] == "confirmation"
+    assert progress["effective_stop_mean_standard_error"] == progress["screening_stop_mean_standard_error"]
+
+
+def test_session_confirms_candidate_after_two_more_items() -> None:
+    session = AssessmentSession(
+        scoring_model="binary_2pl",
+        max_items=30,
+        min_items=5,
+        coverage_min_per_dimension=2,
+        stop_mean_standard_error=0.65,
+        stop_stability_score=0.7,
+        device="cpu",
+    )
+    session.router.answered_indices = set(range(12))
+    session.router.dimension_answer_counts = lambda: {dimension: 2 for dimension in session.router.dimensions}
+    session.router.uncertainty_summary = lambda: {"mean_standard_error": 0.79, "max_standard_error": 0.9, "confidence_ready": False}
+    session.stability = lambda: {"stability_score": 0.88, "stability_ready": True, "stability_stage": "stable"}
+    session._advance_candidate_state()
+    session.confirmation_items_remaining = 0
+    session.confirmation_result = "confirmed"
+    session.candidate_snapshot = {
+        "checkpoint": 12,
+        "target_mean_standard_error": 0.80,
+        "mean_standard_error": 0.79,
+        "stability_score": 0.88,
+        "top_trait": session.router.dimensions[-1],
+        "lowest_trait": session.router.dimensions[0],
+    }
+    session._trait_edges = lambda: (session.router.dimensions[-1], session.router.dimensions[0])
 
     progress = session.progress()
 
     assert progress["complete"] is True
-    assert progress["stopped_by"] == "screening_threshold"
-    assert progress["precision_mode"] == "screening"
-    assert progress["effective_stop_mean_standard_error"] == progress["screening_stop_mean_standard_error"]
+    assert progress["stopped_by"] == "screening_confirmed"
+    assert progress["precision_mode"] == "confirmation"
 
 
-def test_session_wraps_when_screening_plateau_persists_past_trigger() -> None:
+def test_session_clears_candidate_when_confirmation_fails() -> None:
+    session = AssessmentSession(
+        scoring_model="binary_2pl",
+        max_items=30,
+        min_items=5,
+        coverage_min_per_dimension=2,
+        stop_mean_standard_error=0.65,
+        stop_stability_score=0.7,
+        device="cpu",
+    )
+    session.router.answered_indices = set(range(12))
+    session.router.dimension_answer_counts = lambda: {dimension: 2 for dimension in session.router.dimensions}
+    uncertainty_calls = {"count": 0}
+
+    def uncertainty_summary():
+        uncertainty_calls["count"] += 1
+        if uncertainty_calls["count"] == 1:
+            return {"mean_standard_error": 0.79, "max_standard_error": 0.9, "confidence_ready": False}
+        return {"mean_standard_error": 0.84, "max_standard_error": 0.9, "confidence_ready": False}
+
+    session.router.uncertainty_summary = uncertainty_summary
+    session.stability = lambda: {"stability_score": 0.88, "stability_ready": True, "stability_stage": "stable"}
+    session._advance_candidate_state()
+    session.confirmation_items_remaining = 1
+    session._advance_candidate_state()
+
+    progress = session.progress()
+
+    assert progress["complete"] is False
+    assert progress["early_stop_candidate"] is False
+    assert progress["candidate_checkpoint"] is None
+    assert progress["stopped_by"] == "screening_gate"
+
+
+def test_session_wraps_when_screening_plateau_persists_past_final_checkpoint() -> None:
+    session = AssessmentSession(
+        scoring_model="binary_2pl",
+        max_items=30,
+        min_items=5,
+        coverage_min_per_dimension=2,
+        stop_mean_standard_error=0.65,
+        stop_stability_score=0.7,
+        device="cpu",
+    )
+    session.router.answered_indices = set(range(19))
+    session.router.dimension_answer_counts = lambda: {dimension: 3 for dimension in session.router.dimensions}
+    session.router.uncertainty_summary = lambda: {"mean_standard_error": 0.9, "max_standard_error": 1.0, "confidence_ready": False}
+    session.stability = lambda: {"stability_score": 0.92, "stability_ready": True, "stability_stage": "stable"}
+
+    progress = session.progress()
+
+    assert progress["complete"] is True
+    assert progress["stopped_by"] == "screening_plateau"
+    assert progress["precision_mode"] == "screening_plateau"
+    assert progress["screening_threshold_ready"] is False
+
+
+def test_session_sixteen_item_screening_pass_waits_for_next_checkpoint_not_refinement() -> None:
     session = AssessmentSession(
         scoring_model="binary_2pl",
         max_items=30,
@@ -132,15 +230,14 @@ def test_session_wraps_when_screening_plateau_persists_past_trigger() -> None:
     )
     session.router.answered_indices = set(range(16))
     session.router.dimension_answer_counts = lambda: {dimension: 3 for dimension in session.router.dimensions}
-    session.router.uncertainty_summary = lambda: {"mean_standard_error": 0.9, "max_standard_error": 1.0, "confidence_ready": False}
-    session.stability = lambda: {"stability_score": 0.92, "stability_ready": True, "stability_stage": "stable"}
+    session.router.uncertainty_summary = lambda: {"mean_standard_error": 0.84, "max_standard_error": 0.9, "confidence_ready": False}
+    session.stability = lambda: {"stability_score": 0.8, "stability_ready": True, "stability_stage": "stable"}
 
     progress = session.progress()
 
-    assert progress["complete"] is True
-    assert progress["stopped_by"] == "screening_plateau"
-    assert progress["precision_mode"] == "screening_plateau"
-    assert progress["screening_threshold_ready"] is False
+    assert progress["complete"] is False
+    assert progress["precision_mode"] == "screening"
+    assert progress["stopped_by"] == "screening_gate"
 
 
 def test_session_waits_for_stability_before_stopping() -> None:
@@ -244,23 +341,24 @@ def test_result_interpreter_marks_low_evidence_traits() -> None:
             "intellect": 1,
         },
     )
-    assert "Current responses lean most strongly" in payload["overview"]
-    assert payload["low_evidence_traits"] == ["Conscientiousness", "Intellect / openness"]
-    assert any("lower side" in line for line in payload["lowlights"])
+    assert "这一轮最突出的信号" in payload["overview"]
+    assert payload["low_evidence_traits"] == ["尽责", "智力/开放"]
+    assert any("偏低一些" in line for line in payload["lowlights"])
+    assert payload["structured_summary"]["headline_trait"]["label"] == "外向"
 
 
 def test_session_store_json_roundtrip(tmp_path: Path) -> None:
     store = SessionStore(backend="json", ttl_seconds=3600, storage_dir=tmp_path / "sessions")
     session = store.create_session(
         scoring_model="binary_2pl",
-        max_items=3,
-        min_items=2,
+        max_items=1,
+        min_items=1,
         device="cpu",
         param_mode="keyed",
         param_path=None,
         coverage_min_per_dimension=1,
-        stop_mean_standard_error=0.85,
-        stop_stability_score=0.7,
+        stop_mean_standard_error=5.0,
+        stop_stability_score=0.0,
     )
     first = session.next_question()
     assert first is not None
@@ -276,6 +374,25 @@ def test_session_store_json_roundtrip(tmp_path: Path) -> None:
     assert reloaded.router.key_aligned is True
     assert reloaded.comment_submitted is True
     assert reloaded.user_comments == ["我觉得自己平时又拧巴又上头。"]
+
+
+def test_session_comments_require_completion() -> None:
+    session = AssessmentSession(
+        scoring_model="binary_2pl",
+        max_items=3,
+        min_items=2,
+        coverage_min_per_dimension=1,
+        stop_mean_standard_error=0.85,
+        stop_stability_score=0.7,
+        device="cpu",
+    )
+
+    try:
+        session.add_comment("还没做完，我先插一句。")
+    except ValueError as exc:
+        assert "complete" in str(exc)
+    else:
+        raise AssertionError("Comments should be rejected before completion.")
 
 
 def test_snapshot_preserves_active_item(tmp_path: Path) -> None:
@@ -343,7 +460,7 @@ def test_fastapi_session_flow(tmp_path: Path, monkeypatch) -> None:
     monkeypatch.setattr(
         api_module,
         "analyze_personality",
-        lambda ocean_scores, user_comments: {
+        lambda ocean_scores, user_comments, structured_summary=None: {
             "category_key": "Siberian Black",
             "analysis": f"Mock analysis for {len(user_comments)} comments.",
         },
@@ -411,6 +528,8 @@ def test_fastapi_session_flow(tmp_path: Path, monkeypatch) -> None:
     assert result.status_code == 200
     result_payload = result.json()
     assert result_payload["progress"]["complete"] is True
+    assert result_payload["runtime_state"] == "missing"
+    assert result_payload["persistence_state"] == "persisted"
     assert "irt_t_scores" in result_payload
     assert "standard_errors" in result_payload
     assert "uncertainty" in result_payload
@@ -426,6 +545,7 @@ def test_fastapi_session_flow(tmp_path: Path, monkeypatch) -> None:
     assert result_payload["cat_category"] == "Siberian Black"
     assert result_payload["cat_name"] == "【废土独狼】西伯利亚黑猫"
     assert result_payload["cat_image"] == "/static/cats/siberian_black.png"
+    assert result_payload["cat_image_position"] == "40% 34%"
     assert "Mock analysis" in result_payload["cat_analysis"]
 
     repeated = client.get(f"/sessions/{session_id}/result")
@@ -445,13 +565,18 @@ def test_fastapi_session_flow(tmp_path: Path, monkeypatch) -> None:
     assert deleted.status_code == 200
     assert deleted.json()["deleted"] is True
 
+    replayed = client.get(f"/sessions/{session_id}/result")
+    assert replayed.status_code == 200
+    assert replayed.json()["cat_analysis"] == result_payload["cat_analysis"]
+    assert replayed.json()["runtime_state"] == "missing"
+
     shared = client.get(f"/results/{session_id}")
     assert shared.status_code == 200
     assert shared.json()["cat_name"] == "【废土独狼】西伯利亚黑猫"
     assert shared.json()["session_id"] == session_id
 
     restarted = client.post(f"/sessions/{session_id}/restart")
-    assert restarted.status_code == 404
+    assert restarted.status_code == 409
 
     with test_session_local() as db:
         persisted = db.get(UserSessionRecord, session_id)
@@ -474,7 +599,7 @@ def test_result_fallback_persists_once_and_shared_link_survives(tmp_path: Path, 
 
     fallback_calls = {"count": 0}
 
-    def fake_analysis(ocean_scores, user_comments):
+    def fake_analysis(ocean_scores, user_comments, structured_summary=None):
         fallback_calls["count"] += 1
         return {
             "category_key": "Scottish Fold",
@@ -526,6 +651,7 @@ def test_result_fallback_persists_once_and_shared_link_survives(tmp_path: Path, 
     assert first_result.status_code == 200
     first_payload = first_result.json()
     assert first_payload["cat_category"] == "Scottish Fold"
+    assert first_payload["cat_image_position"] == "50% 30%"
     assert "Fallback-safe analysis" in first_payload["cat_analysis"]
 
     second_result = client.get(f"/sessions/{session_id}/result")
@@ -548,3 +674,40 @@ def test_result_fallback_persists_once_and_shared_link_survives(tmp_path: Path, 
     assert shared.status_code == 200
     assert shared.json()["cat_category"] == "Scottish Fold"
     assert shared.json()["cat_analysis"] == first_payload["cat_analysis"]
+
+
+def test_api_rejects_comment_before_completion(tmp_path: Path, monkeypatch) -> None:
+    db_path = tmp_path / "cat_psych.db"
+    test_engine = create_engine(f"sqlite:///{db_path.as_posix()}", connect_args={"check_same_thread": False})
+    Base.metadata.create_all(bind=test_engine)
+    test_session_local = sessionmaker(autocommit=False, autoflush=False, bind=test_engine)
+
+    monkeypatch.setattr(
+        api_module,
+        "SESSION_STORE",
+        SessionStore(backend="json", ttl_seconds=3600, storage_dir=tmp_path / "sessions"),
+    )
+    monkeypatch.setattr(api_module, "SessionLocal", test_session_local)
+    client = TestClient(app)
+
+    created = client.post(
+        "/sessions",
+        json={
+            "scoring_model": "binary_2pl",
+            "max_items": 3,
+            "min_items": 2,
+            "device": "cpu",
+            "coverage_min_per_dimension": 1,
+            "stop_mean_standard_error": 0.85,
+            "stop_stability_score": 0.7,
+        },
+    )
+    assert created.status_code == 200
+    session_id = created.json()["session_id"]
+
+    comment_response = client.post(
+        f"/sessions/{session_id}/comments",
+        json={"comment": "我还没做完，但想先吐槽。"},
+    )
+    assert comment_response.status_code == 409
+    assert "complete" in comment_response.json()["detail"]

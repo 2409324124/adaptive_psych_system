@@ -9,21 +9,9 @@ ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
-from engine import AdaptiveMMPIRouter, ClassicalBigFiveScorer
+from engine import DISCLAIMER_ASCII, TRAIT_ORDER
+from services import AssessmentSession
 
-
-DISCLAIMER = "本系统仅作为心理特质筛查与辅助参考工具，绝对不可替代专业精神科临床诊断。"
-DISCLAIMER_ASCII = (
-    "This system is only a psychological trait screening and reference tool. "
-    "It must not replace professional psychiatric clinical diagnosis."
-)
-TRAIT_ORDER = [
-    "extraversion",
-    "agreeableness",
-    "conscientiousness",
-    "emotional_stability",
-    "intellect",
-]
 
 
 def parse_demo_responses(value: str | None) -> list[int] | None:
@@ -87,10 +75,13 @@ def run_assessment(
     device: str | None,
     demo_responses: list[int] | None = None,
 ) -> dict[str, object]:
-    router = AdaptiveMMPIRouter(scoring_model=scoring_model, device=device)
-    classical = ClassicalBigFiveScorer(item_path=router.item_path)
-    responses: dict[str, int] = {}
-    path: list[dict[str, object]] = []
+    session = AssessmentSession(
+        scoring_model=scoring_model,
+        max_items=max_items,
+        device=device,
+        min_items=1,
+        coverage_min_per_dimension=0,
+    )
     disclaimer = printable_disclaimer()
 
     safe_print("\nCAT-Psych Engine CLI")
@@ -98,45 +89,29 @@ def run_assessment(
     safe_print("\nScale: 1=Very inaccurate, 2=Moderately inaccurate, 3=Neutral, 4=Moderately accurate, 5=Very accurate")
     safe_print("Enter q to quit.\n")
 
-    for step in range(max_items):
-        item = router.select_next_item()
-        if item is None:
+    step = 0
+    while not session.is_complete:
+        question = session.next_question()
+        if question is None:
             break
 
-        safe_print(f"[{step + 1}/{max_items}] {item['text']}")
-        safe_print(f"Dimension hint: {item['dimension']} | key={item['key']} | model={scoring_model}")
+        step += 1
+        item_id = str(question["item_id"])
+
+        safe_print(f"[{step}/{max_items}] {question['text']}")
+        safe_print(f"Dimension hint: {question['dimension']} | key={question['key']} | model={scoring_model}")
 
         if demo_responses is None:
             response = ask_likert("Your response (1-5): ")
         else:
-            response = demo_responses[step % len(demo_responses)]
+            response = demo_responses[(step - 1) % len(demo_responses)]
             safe_print(f"Demo response: {response}")
 
-        record = router.answer_item(str(item["id"]), response)
-        responses[str(item["id"])] = response
-        path.append(
-            {
-                "step": step + 1,
-                "item_id": item["id"],
-                "text": item["text"],
-                "dimension": item["dimension"],
-                "key": item["key"],
-                "response": response,
-                "theta_after": record["theta_after"],
-            }
-        )
+        session.submit_response(item_id, response)
         safe_print()
 
-    result = {
-        "disclaimer": DISCLAIMER,
-        "scoring_model": scoring_model,
-        "max_items": max_items,
-        "answered_count": router.answered_count,
-        "trait_estimates": router.trait_estimates(),
-        "irt_t_scores": router.tendency_t_scores(),
-        "classical_big5": classical.score(responses),
-        "path": path,
-    }
+    result = session.result()
+    result["answered_count"] = session.answered_count
 
     safe_print("Results")
     safe_print("IRT tendency T scores:")

@@ -1,4 +1,5 @@
 from .classical_scoring import ClassicalBigFiveScorer
+from .constants import DISCLAIMER, DISCLAIMER_ASCII, TRAIT_LABELS, TRAIT_ORDER
 from .irt_model import AdaptiveItem, AdaptiveMMPIRouter
 from .param_config import DEFAULT_PARAM_MODE, PARAM_MODE_FILES, infer_param_mode, resolve_param_source
 
@@ -7,7 +8,11 @@ __all__ = [
     "AdaptiveMMPIRouter",
     "ClassicalBigFiveScorer",
     "DEFAULT_PARAM_MODE",
+    "DISCLAIMER",
+    "DISCLAIMER_ASCII",
     "PARAM_MODE_FILES",
+    "TRAIT_LABELS",
+    "TRAIT_ORDER",
     "infer_param_mode",
     "resolve_param_source",
 ]

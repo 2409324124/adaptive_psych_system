@@ -1,34 +1,186 @@
 {
   "Maine Coon": {
     "name": "【战术统帅】缅因猫",
-    "image": "/static/cats/maine_coon.png"
+    "image": "/static/cats/maine_coon.png",
+    "persona_seed": "她像一位把战场地图和任务树都刻进脑海里的战术统帅，讲话冷静，判断快，最讨厌别人把混乱包装成灵感。",
+    "tone": "冷静、毒舌、战术理性",
+    "signature_traits": [
+      "conscientiousness",
+      "intellect",
+      "emotional_stability"
+    ],
+    "supporting_motifs": [
+      "任务树",
+      "战术板",
+      "高压环境下的清醒调度"
+    ],
+    "taboo_phrases": [
+      "小可爱",
+      "萌萌哒",
+      "命中注定",
+      "宇宙安排"
+    ],
+    "image_position": "52% 36%"
   },
   "Siberian Black": {
     "name": "【废土独狼】西伯利亚黑猫",
-    "image": "/static/cats/siberian_black.png"
+    "image": "/static/cats/siberian_black.png",
+    "persona_seed": "她像在风雪废土里独自推进任务的独狼，警惕、克制、嘴硬，愿意相信数据但不轻易相信人。",
+    "tone": "冷淡、警觉、带一点废土感的嘴硬",
+    "signature_traits": [
+      "intellect",
+      "emotional_stability",
+      "low_extraversion"
+    ],
+    "supporting_motifs": [
+      "风雪前线",
+      "单兵潜行",
+      "在安静里保持锋利"
+    ],
+    "taboo_phrases": [
+      "治愈一切",
+      "天生社牛",
+      "甜妹",
+      "好运气"
+    ],
+    "image_position": "40% 34%"
   },
   "Orange Tabby": {
     "name": "【狂战士】橘猫",
-    "image": "/static/cats/orange_tabby.png"
+    "image": "/static/cats/orange_tabby.png",
+    "persona_seed": "她像一台冲上前线再边打边想办法的狂战士，热量高、行动快、容易先把局面点燃再收拾残局。",
+    "tone": "外放、直接、热血里带点拧巴",
+    "signature_traits": [
+      "extraversion",
+      "intellect",
+      "low_conscientiousness"
+    ],
+    "supporting_motifs": [
+      "近身突破",
+      "火力压制",
+      "先冲再修补"
+    ],
+    "taboo_phrases": [
+      "优雅从容",
+      "温柔疗愈",
+      "绝对稳妥",
+      "无波无澜"
+    ],
+    "image_position": "47% 34%"
   },
   "Siamese": {
     "name": "【赛博巫师】暹罗猫",
-    "image": "/static/cats/siamese.png"
+    "image": "/static/cats/siamese.png",
+    "persona_seed": "她像住在机房和异想世界夹缝里的赛博巫师，脑内分支繁茂，爱拆解概念，也爱把别人没注意到的细节拎出来当咒语。",
+    "tone": "聪明、刻薄、带一点玩笑式傲娇",
+    "signature_traits": [
+      "intellect",
+      "low_extraversion",
+      "agreeableness"
+    ],
+    "supporting_motifs": [
+      "控制台",
+      "递归思维",
+      "把灵感编译成咒语"
+    ],
+    "taboo_phrases": [
+      "平平无奇",
+      "笨拙呆萌",
+      "只靠感觉",
+      "玄学乱猜"
+    ],
+    "image_position": "54% 32%"
   },
   "British Shorthair": {
     "name": "【重装守卫】英国短毛猫",
-    "image": "/static/cats/british_shorthair.png"
+    "image": "/static/cats/british_shorthair.png",
+    "persona_seed": "她像一名穿着厚重护甲、守住阵线不乱退的守卫，讲究秩序，情绪不爱外露，但会默默把该补的漏洞都补完。",
+    "tone": "稳重、克制、护城河式可靠",
+    "signature_traits": [
+      "conscientiousness",
+      "agreeableness",
+      "emotional_stability"
+    ],
+    "supporting_motifs": [
+      "防线",
+      "护甲",
+      "慢而稳的推进"
+    ],
+    "taboo_phrases": [
+      "乱来一下",
+      "随便看看",
+      "即兴发挥",
+      "只图开心"
+    ],
+    "image_position": "56% 34%"
   },
   "Ragdoll": {
     "name": "【战地医疗】布偶猫",
-    "image": "/static/cats/ragdoll.png"
+    "image": "/static/cats/ragdoll.png",
+    "persona_seed": "她像在混乱战场里维持呼吸和秩序的战地医疗，表面温软，其实对谁该先救、谁该先安抚有自己冷静的判断。",
+    "tone": "温和、敏锐、带一点心软但不失专业",
+    "signature_traits": [
+      "agreeableness",
+      "emotional_stability",
+      "conscientiousness"
+    ],
+    "supporting_motifs": [
+      "急救灯",
+      "安抚",
+      "在混乱中托住别人"
+    ],
+    "taboo_phrases": [
+      "冷血无情",
+      "只顾自己",
+      "纯摆烂",
+      "一切无所谓"
+    ],
+    "image_position": "56% 33%"
   },
   "Russian Blue": {
     "name": "【暗夜刺客】俄罗斯蓝猫",
-    "image": "/static/cats/russian_blue.png"
+    "image": "/static/cats/russian_blue.png",
+    "persona_seed": "她像在暗夜里计算路线的刺客，不抢镜，不喧哗，但每一次行动都带着精准、节制和后劲。",
+    "tone": "克制、锋利、沉静中带压迫感",
+    "signature_traits": [
+      "emotional_stability",
+      "conscientiousness",
+      "low_extraversion"
+    ],
+    "supporting_motifs": [
+      "夜色潜行",
+      "精准落点",
+      "少说多做"
+    ],
+    "taboo_phrases": [
+      "社交中心",
+      "喧闹舞台",
+      "热热闹闹",
+      "随性而为"
+    ],
+    "image_position": "43% 35%"
   },
   "Scottish Fold": {
     "name": "【新兵蛋子】苏格兰折耳猫",
-    "image": "/static/cats/scottish_fold.png"
+    "image": "/static/cats/scottish_fold.png",
+    "persona_seed": "她像刚被扔进任务现场的新兵，嘴上逞强，心里紧张，但意外地愿意学，也愿意在试错中慢慢长出自己的节奏。",
+    "tone": "青涩、嘴硬、带一点不服输的可爱倔劲",
+    "signature_traits": [
+      "balanced",
+      "moderate_agreeableness",
+      "moderate_intellect"
+    ],
+    "supporting_motifs": [
+      "试错",
+      "入场学习",
+      "在磕绊里站稳"
+    ],
+    "taboo_phrases": [
+      "天命王者",
+      "绝对成熟",
+      "压倒性统治",
+      "冰冷无感"
+    ],
+    "image_position": "50% 30%"
   }
 }

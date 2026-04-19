@@ -4,16 +4,23 @@ from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from uuid import uuid4
 
-from engine import AdaptiveMMPIRouter, ClassicalBigFiveScorer, resolve_param_source
+from engine import AdaptiveMMPIRouter, ClassicalBigFiveScorer, DISCLAIMER, resolve_param_source
 from services.progress_estimator import ProgressEstimator
 from services.result_interpreter import ResultInterpreter
 from services.stability_analyzer import StabilityAnalyzer
 
 
-DISCLAIMER = "\u672c\u7cfb\u7edf\u4ec5\u4f5c\u4e3a\u5fc3\u7406\u7279\u8d28\u7b5b\u67e5\u4e0e\u8f85\u52a9\u53c2\u8003\u5de5\u5177\uff0c\u7edd\u5bf9\u4e0d\u53ef\u66ff\u4ee3\u4e13\u4e1a\u7cbe\u795e\u79d1\u4e34\u5e8a\u8bca\u65ad\u3002"
 SCREENING_STOP_MEAN_STANDARD_ERROR = 0.85
-REFINEMENT_ITEM_TRIGGER = 15
 STABILITY_SE_RELAXATION = 0.1
+CONFIRMATION_WINDOW_ITEMS = 2
+CONFIRMATION_MEAN_SE_TOLERANCE = 0.02
+
+CHECKPOINTS = (
+    {"answered": 12, "target_mean_standard_error": 0.80},
+    {"answered": 15, "target_mean_standard_error": 0.85},
+    {"answered": 18, "target_mean_standard_error": 0.82},
+)
+FINAL_SCREENING_CHECKPOINT = CHECKPOINTS[-1]["answered"]
 
 
 @dataclass
@@ -30,6 +37,12 @@ class AssessmentSession:
     session_id: str = field(default_factory=lambda: str(uuid4()))
     created_at: str = field(default_factory=lambda: datetime.now(UTC).isoformat())
     updated_at: str = field(default_factory=lambda: datetime.now(UTC).isoformat())
+    early_stop_candidate: bool = False
+    candidate_checkpoint: int | None = None
+    confirmation_items_remaining: int = 0
+    attempted_candidate_checkpoints: list[int] = field(default_factory=list)
+    candidate_snapshot: dict[str, object] | None = None
+    confirmation_result: str | None = None
 
     def __post_init__(self) -> None:
         resolved_mode, resolved_path = resolve_param_source(param_mode=self.param_mode, param_path=self.param_path)
@@ -70,6 +83,12 @@ class AssessmentSession:
             "param_metadata": dict(self.router.param_metadata),
         }
 
+    @property
+    def runtime_state(self) -> str:
+        if self.is_complete:
+            return "completed"
+        return "active"
+
     def stability(self) -> dict[str, object]:
         return self.stability_analyzer.evaluate(
             history=self.router.history,
@@ -91,11 +110,12 @@ class AssessmentSession:
             STABILITY_SE_RELAXATION if stability_ready else 0.0
         )
         screening_threshold_met = uncertainty["mean_standard_error"] <= screening_stop_mean_standard_error
-        refinement_active = answered > REFINEMENT_ITEM_TRIGGER and screening_threshold_met
+        refinement_active = answered > FINAL_SCREENING_CHECKPOINT and screening_threshold_met
         effective_stop_mean_standard_error = (
             refined_stop_mean_standard_error if refinement_active else screening_stop_mean_standard_error
         )
         se_threshold_met = uncertainty["mean_standard_error"] <= effective_stop_mean_standard_error
+        confirmation_passed = self._confirmation_passes(uncertainty=uncertainty, stability=stability)
 
         if answered >= self.max_items:
             complete = True
@@ -113,21 +133,33 @@ class AssessmentSession:
             complete = False
             stopped_by = "coverage_gate"
             precision_mode = "coverage"
-        elif answered > REFINEMENT_ITEM_TRIGGER and not screening_threshold_met:
+        elif self.early_stop_candidate and self.confirmation_items_remaining > 0:
+            complete = False
+            stopped_by = "confirmation_window"
+            precision_mode = "confirmation"
+        elif self.confirmation_result == "confirmed" and confirmation_passed:
+            complete = True
+            stopped_by = "screening_confirmed"
+            precision_mode = "confirmation"
+        elif self.early_stop_candidate:
+            complete = False
+            stopped_by = "screening_candidate"
+            precision_mode = "screening"
+        elif answered > FINAL_SCREENING_CHECKPOINT and not screening_threshold_met:
             complete = True
             stopped_by = "screening_plateau"
             precision_mode = "screening_plateau"
+        elif self._checkpoint_ready(uncertainty=uncertainty, stability=stability) is not None:
+            complete = False
+            stopped_by = "screening_candidate"
+            precision_mode = "screening"
         elif not screening_threshold_met:
             complete = False
             stopped_by = "screening_gate"
             precision_mode = "screening"
-        elif answered <= REFINEMENT_ITEM_TRIGGER:
-            if stability_ready:
-                complete = True
-                stopped_by = "screening_threshold"
-            else:
-                complete = False
-                stopped_by = "stability_gate"
+        elif answered <= FINAL_SCREENING_CHECKPOINT:
+            complete = False
+            stopped_by = "stability_gate" if stability_ready is False else "screening_gate"
             precision_mode = "screening"
         elif not se_threshold_met:
             complete = False
@@ -152,7 +184,7 @@ class AssessmentSession:
             "coverage_min_per_dimension": self.coverage_min_per_dimension,
             "stop_mean_standard_error": self.stop_mean_standard_error,
             "screening_stop_mean_standard_error": screening_stop_mean_standard_error,
-            "refinement_item_trigger": REFINEMENT_ITEM_TRIGGER,
+            "refinement_item_trigger": FINAL_SCREENING_CHECKPOINT,
             "screening_threshold_ready": screening_threshold_met,
             "effective_stop_mean_standard_error": effective_stop_mean_standard_error,
             "stop_stability_score": self.stop_stability_score,
@@ -164,7 +196,12 @@ class AssessmentSession:
             "stability_stage": str(stability["stability_stage"]),
             "precision_mode": precision_mode,
             "stopped_by": stopped_by,
+            "stop_state": stopped_by,
             "complete": complete,
+            "early_stop_candidate": self.early_stop_candidate,
+            "candidate_checkpoint": self.candidate_checkpoint,
+            "confirmation_items_remaining": self.confirmation_items_remaining,
+            "checkpoint_schedule": list(CHECKPOINTS),
         }
 
     def progress(self) -> dict[str, int | float | bool | str]:
@@ -185,6 +222,8 @@ class AssessmentSession:
             standard_error_ready=bool(progress["standard_error_ready"]),
             stability_ready=bool(progress["stability_ready"]),
             stopped_by=str(progress["stopped_by"]),
+            early_stop_candidate=bool(progress["early_stop_candidate"]),
+            confirmation_items_remaining=int(progress["confirmation_items_remaining"]),
         )
 
     def next_question(self) -> dict[str, object] | None:
@@ -196,7 +235,7 @@ class AssessmentSession:
             self.active_item["progress"] = self.progress()
             self.active_item["progress_estimate"] = self.progress_estimate()
             return self.active_item
-        item = self.router.select_next_item()
+        item = self._select_confirmation_item() if self.confirmation_items_remaining > 0 else self.router.select_next_item()
         if item is None:
             self.active_item = None
             return None
@@ -236,6 +275,7 @@ class AssessmentSession:
                 "theta_after": record["theta_after"],
             }
         )
+        self._advance_candidate_state()
         self.active_item = None
         return {
             "session_id": self.session_id,
@@ -247,6 +287,8 @@ class AssessmentSession:
 
     def add_comment(self, comment: str) -> dict[str, object]:
         self.touch()
+        if not self.is_complete:
+            raise ValueError("Comments can only be added after the assessment is complete.")
         text = comment.strip()
         if not text:
             raise ValueError("Comment must not be empty.")
@@ -266,6 +308,12 @@ class AssessmentSession:
         self.active_item = None
         self.user_comments.clear()
         self.comment_submitted = False
+        self.early_stop_candidate = False
+        self.candidate_checkpoint = None
+        self.confirmation_items_remaining = 0
+        self.attempted_candidate_checkpoints.clear()
+        self.candidate_snapshot = None
+        self.confirmation_result = None
         self.touch()
 
     def summary(self) -> dict[str, object]:
@@ -280,8 +328,16 @@ class AssessmentSession:
             "stop_mean_standard_error": self.stop_mean_standard_error,
             "stop_stability_score": self.stop_stability_score,
             "device": self.device,
+            "runtime_state": self.runtime_state,
+            "persistence_state": "ephemeral",
             "comment_submitted": self.comment_submitted,
             "user_comments": list(self.user_comments),
+            "early_stop_candidate": self.early_stop_candidate,
+            "candidate_checkpoint": self.candidate_checkpoint,
+            "confirmation_items_remaining": self.confirmation_items_remaining,
+            "attempted_candidate_checkpoints": list(self.attempted_candidate_checkpoints),
+            "candidate_snapshot": dict(self.candidate_snapshot) if self.candidate_snapshot is not None else None,
+            "confirmation_result": self.confirmation_result,
             **self.parameter_summary(),
             "progress": self.progress(),
             "progress_estimate": self.progress_estimate(),
@@ -321,6 +377,7 @@ class AssessmentSession:
             "cat_category": None,
             "cat_name": None,
             "cat_image": None,
+            "cat_image_position": None,
             "cat_analysis": None,
         }
 
@@ -339,6 +396,12 @@ class AssessmentSession:
             session_id=str(payload["session_id"]),
             created_at=str(payload.get("created_at") or datetime.now(UTC).isoformat()),
             updated_at=str(payload.get("updated_at") or datetime.now(UTC).isoformat()),
+            early_stop_candidate=bool(payload.get("early_stop_candidate", False)),
+            candidate_checkpoint=int(payload["candidate_checkpoint"]) if payload.get("candidate_checkpoint") is not None else None,
+            confirmation_items_remaining=int(payload.get("confirmation_items_remaining", 0)),
+            attempted_candidate_checkpoints=[int(value) for value in payload.get("attempted_candidate_checkpoints", [])],
+            candidate_snapshot=dict(payload["candidate_snapshot"]) if isinstance(payload.get("candidate_snapshot"), dict) else None,
+            confirmation_result=payload.get("confirmation_result"),
         )
         for step in payload.get("path", []):
             item_id = str(step["item_id"])
@@ -363,3 +426,136 @@ class AssessmentSession:
         session.comment_submitted = bool(payload.get("comment_submitted", bool(session.user_comments)))
         session.updated_at = str(payload.get("updated_at") or datetime.now(UTC).isoformat())
         return session
+
+    def _checkpoint_ready(
+        self,
+        *,
+        uncertainty: dict[str, float | bool],
+        stability: dict[str, object],
+    ) -> dict[str, int | float] | None:
+        if self.early_stop_candidate or self.confirmation_result == "confirmed":
+            return None
+        if self.answered_count <= 0:
+            return None
+        counts = self.router.dimension_answer_counts()
+        if min(counts.values()) < self.coverage_min_per_dimension:
+            return None
+        if not bool(stability["stability_ready"]):
+            return None
+
+        for checkpoint in CHECKPOINTS:
+            answered = int(checkpoint["answered"])
+            if self.answered_count != answered:
+                continue
+            if answered in self.attempted_candidate_checkpoints:
+                continue
+            if float(uncertainty["mean_standard_error"]) <= float(checkpoint["target_mean_standard_error"]):
+                return checkpoint
+        return None
+
+    def _trait_edges(self) -> tuple[str, str]:
+        scores = self.router.tendency_t_scores()
+        ranked = sorted(scores.items(), key=lambda entry: entry[1])
+        return ranked[-1][0], ranked[0][0]
+
+    def _start_candidate(self, checkpoint: dict[str, int | float]) -> None:
+        top_trait, lowest_trait = self._trait_edges()
+        self.early_stop_candidate = True
+        self.candidate_checkpoint = int(checkpoint["answered"])
+        self.confirmation_items_remaining = CONFIRMATION_WINDOW_ITEMS
+        self.attempted_candidate_checkpoints.append(int(checkpoint["answered"]))
+        self.candidate_snapshot = {
+            "checkpoint": int(checkpoint["answered"]),
+            "target_mean_standard_error": float(checkpoint["target_mean_standard_error"]),
+            "mean_standard_error": float(self.router.uncertainty_summary()["mean_standard_error"]),
+            "stability_score": float(self.stability()["stability_score"]),
+            "top_trait": top_trait,
+            "lowest_trait": lowest_trait,
+        }
+        self.confirmation_result = None
+
+    def _clear_candidate(self) -> None:
+        self.early_stop_candidate = False
+        self.candidate_checkpoint = None
+        self.confirmation_items_remaining = 0
+        self.candidate_snapshot = None
+        self.confirmation_result = None
+
+    def _confirmation_passes(
+        self,
+        *,
+        uncertainty: dict[str, float | bool] | None = None,
+        stability: dict[str, object] | None = None,
+    ) -> bool:
+        if self.candidate_snapshot is None:
+            return False
+        uncertainty = uncertainty or self.router.uncertainty_summary()
+        stability = stability or self.stability()
+        top_trait, lowest_trait = self._trait_edges()
+        allowed_mean_se = float(self.candidate_snapshot["target_mean_standard_error"]) + CONFIRMATION_MEAN_SE_TOLERANCE
+        return (
+            float(uncertainty["mean_standard_error"]) <= allowed_mean_se
+            and bool(stability["stability_ready"])
+            and top_trait == str(self.candidate_snapshot["top_trait"])
+            and lowest_trait == str(self.candidate_snapshot["lowest_trait"])
+        )
+
+    def _advance_candidate_state(self) -> None:
+        if self.early_stop_candidate and self.confirmation_items_remaining > 0:
+            self.confirmation_items_remaining = max(0, self.confirmation_items_remaining - 1)
+            if self.confirmation_items_remaining == 0:
+                if self._confirmation_passes():
+                    self.confirmation_result = "confirmed"
+                    self.early_stop_candidate = False
+                else:
+                    self._clear_candidate()
+            return
+
+        checkpoint = self._checkpoint_ready(
+            uncertainty=self.router.uncertainty_summary(),
+            stability=self.stability(),
+        )
+        if checkpoint is not None:
+            self._start_candidate(checkpoint)
+
+    def _select_confirmation_item(self) -> dict[str, object] | None:
+        if self.router.remaining_count <= 0:
+            return None
+
+        scores = self.router.information_scores().detach().cpu()
+        counts = self.router.dimension_answer_counts()
+        standard_errors = self.router.standard_errors()
+        max_count = max(counts.values()) if counts else 0
+        recent_by_dimension: dict[str, dict[str, object]] = {}
+        for step in self.path:
+            recent_by_dimension[str(step["dimension"])] = step
+        last_step = self.path[-1] if self.path else None
+
+        best_item = None
+        best_rank = None
+        for item in self.router.items:
+            if item.index in self.router.answered_indices:
+                continue
+
+            recent = recent_by_dimension.get(item.dimension)
+            reverse_bonus = 1 if recent is not None and int(recent["key"]) != item.key else 0
+            low_evidence_bonus = max_count - counts.get(item.dimension, 0)
+            similarity_penalty = (
+                1 if last_step is not None and str(last_step["dimension"]) == item.dimension and int(last_step["key"]) == item.key else 0
+            )
+            rank = (
+                float(standard_errors.get(item.dimension, 0.0)),
+                int(low_evidence_bonus),
+                int(reverse_bonus),
+                float(scores[item.index]),
+                -int(similarity_penalty),
+            )
+            if best_rank is None or rank > best_rank:
+                best_rank = rank
+                best_item = item.to_dict()
+
+        if best_item is None:
+            return None
+        best_item["response_scale"] = self.router.response_scale
+        best_item["scoring_model"] = self.scoring_model
+        return best_item

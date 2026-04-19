@@ -48,6 +48,8 @@ class ProgressEstimator:
         standard_error_ready: bool,
         stability_ready: bool,
         stopped_by: str,
+        early_stop_candidate: bool,
+        confirmation_items_remaining: int,
     ) -> dict[str, object]:
         record = self._match_record(
             param_mode=param_mode,
@@ -81,6 +83,8 @@ class ProgressEstimator:
                 standard_error_ready=standard_error_ready,
                 stability_ready=stability_ready,
                 stopped_by=stopped_by,
+                early_stop_candidate=early_stop_candidate,
+                confirmation_items_remaining=confirmation_items_remaining,
             ),
         }
 
@@ -122,15 +126,21 @@ class ProgressEstimator:
         standard_error_ready: bool,
         stability_ready: bool,
         stopped_by: str,
+        early_stop_candidate: bool,
+        confirmation_items_remaining: int,
     ) -> str:
         if stopped_by == "max_items_cap":
             return "item cap reached"
         if stopped_by == "item_bank_exhausted":
             return "item bank exhausted"
-        if stopped_by in {"screening_threshold", "stability_threshold"}:
+        if stopped_by in {"screening_confirmed", "stability_threshold"}:
             return "confidence target reached"
         if stopped_by == "screening_plateau":
             return "screening plateau reached"
+        if stopped_by == "confirmation_window" or confirmation_items_remaining > 0:
+            return "confirmation window"
+        if stopped_by == "screening_candidate" or early_stop_candidate:
+            return "early stop candidate"
         if not min_items_met:
             return "building minimum evidence"
         if not coverage_ready:

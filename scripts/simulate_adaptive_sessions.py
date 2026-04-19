@@ -16,20 +16,13 @@ ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
-from engine import AdaptiveMMPIRouter, ClassicalBigFiveScorer, resolve_param_source
+from engine import AdaptiveMMPIRouter, TRAIT_ORDER
+from services import AssessmentSession
 
 
 SCRIPT_VERSION = "2026-04-13-response-style-v2"
 DEFAULT_SEED = 20260413
 
-
-TRAIT_ORDER = [
-    "extraversion",
-    "agreeableness",
-    "conscientiousness",
-    "emotional_stability",
-    "intellect",
-]
 
 
 @dataclass(frozen=True)
@@ -172,20 +165,29 @@ def run_session(
     response_style: str = "stable",
     seed: int = DEFAULT_SEED,
 ) -> dict[str, object]:
-    resolved_mode, resolved_path = resolve_param_source(param_mode=param_mode, param_path=param_path)
-    router = AdaptiveMMPIRouter(scoring_model=scoring_model, device=device, param_path=resolved_path)
-    classical = ClassicalBigFiveScorer(item_path=router.item_path)
-    path: list[dict[str, object]] = []
-    responses: dict[str, int] = {}
+    session = AssessmentSession(
+        scoring_model=scoring_model,
+        max_items=max_items,
+        device=device,
+        param_mode=param_mode,
+        param_path=param_path,
+        min_items=1,
+        coverage_min_per_dimension=0,
+    )
+    router = session.router
     style = style_by_name(response_style)
     style_seed = derive_style_seed(seed=seed, persona_name=persona.name, response_style=style)
     previous_responses_by_dimension: dict[str, int] = {}
 
-    for step in range(max_items):
-        item = router.select_next_item()
-        if item is None:
+    step = 0
+    while not session.is_complete:
+        question = session.next_question()
+        if question is None:
             break
-        item_index = int(item["index"])
+
+        item_id = str(question["item_id"])
+        item_index = router._index_for_item_id(item_id)
+
         response = simulated_response(
             router,
             item_index,
@@ -194,50 +196,13 @@ def run_session(
             step=step,
             seed=seed,
             persona_name=persona.name,
-            previous_dimension_response=previous_responses_by_dimension.get(str(item["dimension"])),
+            previous_dimension_response=previous_responses_by_dimension.get(str(question["dimension"])),
         )
-        record = router.answer_item(str(item["id"]), response)
-        responses[str(item["id"])] = response
-        previous_responses_by_dimension[str(item["dimension"])] = response
-        path.append(
-            {
-                "step": step + 1,
-                "item_id": item["id"],
-                "dimension": item["dimension"],
-                "key": item["key"],
-                "response": response,
-                "theta_after": record["theta_after"],
-            }
-        )
+        session.submit_response(item_id, response)
+        previous_responses_by_dimension[str(question["dimension"])] = response
+        step += 1
 
-    classical_scores = classical.score(responses)
-    dimension_counts = router.dimension_answer_counts()
-    uncertainty = router.uncertainty_summary()
-    stability_score = 0.0
-    stability_stage = "unstable"
-    if router.history:
-        from services.stability_analyzer import StabilityAnalyzer
-
-        path_records = [
-            {
-                "step": record["step"],
-                "item_id": record["item_id"],
-                "dimension": record["dimension"],
-                "key": record["key"],
-                "response": record["response"],
-                "keyed_response": router.history[index]["keyed_response"],
-                "theta_after": record["theta_after"],
-            }
-            for index, record in enumerate(path)
-        ]
-        stability = StabilityAnalyzer().evaluate(
-            history=router.history,
-            path=path_records,
-            dimensions=router.dimensions,
-            stop_threshold=0.7,
-        )
-        stability_score = float(stability["stability_score"])
-        stability_stage = str(stability["stability_stage"])
+    result = session.result()
     return {
         "persona": persona.name,
         "response_style": response_style,
@@ -246,20 +211,20 @@ def run_session(
         "scoring_model": scoring_model,
         "max_items": max_items,
         "seed": seed,
-        "param_mode": resolved_mode,
-        "param_path": str(resolved_path),
+        "param_mode": session.param_mode,
+        "param_path": session.param_path,
         "key_aligned": router.key_aligned,
         "param_metadata": dict(router.param_metadata),
-        "answered_count": router.answered_count,
-        "mean_standard_error": uncertainty["mean_standard_error"],
-        "confidence_ready": uncertainty["confidence_ready"],
-        "stability_score": stability_score,
-        "stability_stage": stability_stage,
-        "dimension_answer_counts": dimension_counts,
-        "trait_estimates": router.trait_estimates(),
-        "irt_t_scores": router.tendency_t_scores(),
-        "classical_big5": classical_scores,
-        "path": path,
+        "answered_count": session.answered_count,
+        "mean_standard_error": result["uncertainty"]["mean_standard_error"],
+        "confidence_ready": result["uncertainty"]["confidence_ready"],
+        "stability_score": float(result["stability"]["stability_score"]),
+        "stability_stage": str(result["stability"]["stability_stage"]),
+        "dimension_answer_counts": result["dimension_answer_counts"],
+        "trait_estimates": result["trait_estimates"],
+        "irt_t_scores": result["irt_t_scores"],
+        "classical_big5": result["classical_big5"],
+        "path": result["path"],
     }
 
 
