@@ -26,6 +26,7 @@ const progressLabel = document.querySelector("#progressLabel");
 const progressHint = document.querySelector("#progressHint");
 const progressBar = document.querySelector("#progressBar");
 const questionText = document.querySelector("#questionText");
+const questionTextEn = document.querySelector("#questionTextEn");
 const responsesEl = document.querySelector("#responses");
 const chatLog = document.querySelector("#chatLog");
 const resultsEl = document.querySelector("#results");
@@ -62,11 +63,11 @@ let currentQuestion = null;
 let submitting = false;
 
 const responseLabels = {
-  1: "1 Very inaccurate",
-  2: "2 Moderately inaccurate",
-  3: "3 Neutral",
-  4: "4 Moderately accurate",
-  5: "5 Very accurate",
+  1: "1 非常不准确 / Very inaccurate",
+  2: "2 中度不准确 / Moderately inaccurate",
+  3: "3 中立 / Neutral",
+  4: "4 中等准确 / Moderately accurate",
+  5: "5 非常准确 / Very accurate",
 };
 
 const evidenceStageCopy = {
@@ -119,6 +120,7 @@ function resetApp(clearResultParam = true) {
   sessionConfigLabel.textContent = "";
   setupSummary.textContent = "";
   questionText.textContent = "";
+  questionTextEn.textContent = "";
   responsesEl.innerHTML = "";
   chatLog.innerHTML = "";
   coverageGrid.innerHTML = "";
@@ -238,8 +240,9 @@ function renderQuestion(question) {
   questionArea.hidden = false;
   updateProgress(question.progress, question.progress_estimate);
   sessionTitle.textContent = `Adaptive check-in | prompt ${question.progress.answered + 1}`;
-  questionText.textContent = question.text;
-  appendBubble("system", question.text);
+  questionText.textContent = question.text_zh || question.text;
+  questionTextEn.textContent = question.text;
+  appendBubble("system", question.text_zh || question.text, question.text_zh ? question.text : "");
   responsesEl.innerHTML = "";
   for (const value of [1, 2, 3, 4, 5]) {
     const button = document.createElement("button");
@@ -600,14 +603,22 @@ function renderList(target, items) {
 }
 
 function appendBubble(role, text) {
+  const secondary = arguments.length > 2 ? arguments[2] : "";
   const item = document.createElement("article");
   const label = document.createElement("span");
   const body = document.createElement("p");
+  const bodySecondary = document.createElement("p");
   item.className = `bubble bubble--${role}`;
   label.className = "bubble-label";
+  body.className = "bubble-text";
+  bodySecondary.className = "bubble-secondary";
   body.textContent = text;
   label.textContent = role === "system" ? "Prompt" : "Your answer";
   item.append(label, body);
+  if (secondary) {
+    bodySecondary.textContent = secondary;
+    item.append(bodySecondary);
+  }
   chatLog.appendChild(item);
   chatLog.scrollTop = chatLog.scrollHeight;
 }

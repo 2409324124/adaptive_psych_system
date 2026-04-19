@@ -39,3 +39,13 @@ def test_cat_mapping_contains_persona_template_fields() -> None:
         assert len(profile["supporting_motifs"]) == 3
         assert len(profile["taboo_phrases"]) == 4
         assert category not in profile["persona_seed"]
+
+
+def test_ipip_translation_file_covers_all_items() -> None:
+    root = Path(__file__).resolve().parents[1]
+    items_payload = json.loads((root / "data" / "ipip_items.json").read_text(encoding="utf-8"))
+    zh_payload = json.loads((root / "data" / "ipip_items_zh.json").read_text(encoding="utf-8"))
+
+    item_ids = {item["id"] for item in items_payload["items"]}
+    assert set(zh_payload.keys()) == item_ids
+    assert all(str(text).strip() for text in zh_payload.values())
