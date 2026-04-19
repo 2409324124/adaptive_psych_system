@@ -1,62 +1,105 @@
 # CAT-Psych
 
-Dynamic adaptive psychological assessment system based on MIRT/CAT, PyTorch, local Ollama LLM integration, and a lightweight Tkinter desktop chat-flow UI.
+一个可直接跑起来的自适应人格测评原型：
 
-## Current Status
+- FastAPI Web + API
+- MIRT / CAT 自适应选题
+- Big Five 50 题 starter bank
+- 中文优先、英文辅助题干
+- 可选大语言模型进行人格解析和简易分析
 
-- Conda environment: `IPIP`
-- PyTorch: CUDA-enabled build verified on RTX 4060 Laptop GPU
-- MVP item bank: public-domain IPIP Big-Five 50-item starter set
-- Full pulled item bank: official IPIP 3,320-item alphabetical list in `data/ipip_full_item_bank.json`
-- Item assignment table: `data/ipip_item_assignment_table.json`
-- Mock MIRT/2PL parameters: `data/mock_params.pt`
-- Key-aware experimental parameters: `data/mock_params_keyed.pt`
-- Adaptive routing: coverage-aware item selection keeps early short tests from ignoring low-evidence traits
-- Architecture and project memory: `memory/`
-- Design vision: `docs/adaptive_measurement_vision.md`
+这个 README 只保留“怎么启动、怎么测、怎么改”三件事。
 
-## Environment
+## 60 秒启动
+
+### 1. 准备环境
 
 ```powershell
 conda env create -f environment.yml
 conda activate IPIP
 ```
 
-For an existing environment:
+如果环境已经存在：
 
 ```powershell
 conda env update -n IPIP -f environment.yml --prune
 ```
 
-## Web App
-
-Start the local FastAPI app:
+### 2. 启动服务
 
 ```powershell
 conda activate IPIP
 uvicorn api.app:app --host 127.0.0.1 --port 8000 --reload
 ```
 
-Open:
+打开：
 
 ```text
 http://127.0.0.1:8000
 ```
 
-API docs:
+接口文档：
 
 ```text
 http://127.0.0.1:8000/docs
 ```
 
-Session behavior:
+## 最常用的 3 个模式
 
-- Default backend is in-memory session storage.
-- Set `CAT_PSYCH_SESSION_BACKEND=json` to enable local JSON session persistence.
-- Session timeout is controlled by `CAT_PSYCH_SESSION_TTL_SECONDS` and defaults to `7200`.
-- Optional JSON files are stored under `data/sessions/` unless `CAT_PSYCH_SESSION_DIR` is provided.
+### 模式 A：本地直接跑
 
-Session API highlights:
+默认就是内存 session，适合开发和本地验证。
+
+```powershell
+conda activate IPIP
+uvicorn api.app:app --host 127.0.0.1 --port 8000 --reload
+```
+
+### 模式 B：开启本地 JSON 会话持久化
+
+适合调试 session 生命周期、恢复本地测试数据。
+
+```powershell
+$env:CAT_PSYCH_SESSION_BACKEND="json"
+uvicorn api.app:app --host 127.0.0.1 --port 8000 --reload
+```
+
+可选参数：
+
+- `CAT_PSYCH_SESSION_TTL_SECONDS`：session TTL，默认 `7200`
+- `CAT_PSYCH_SESSION_DIR`：JSON session 文件目录，默认 `data/sessions/`
+
+### 模式 C：接入 DeepSeek 生成大语言模型分析
+
+不配置也能跑，只是会走 fallback 文案。
+
+在项目根目录 `.env` 中放入：
+
+```env
+DEEPSEEK_API_KEY=...
+DEEPSEEK_BASE_URL=...
+DEEPSEEK_MODEL=...
+```
+
+然后正常启动：
+
+```powershell
+uvicorn api.app:app --host 127.0.0.1 --port 8000 --reload
+```
+
+## 你现在实际会得到什么
+
+### Web 侧
+
+- 进入首页后可直接创建 session
+- 题目按 CAT 路由逐题发放
+- 中文题干优先显示，英文原文作为辅助
+- 支持 early stop、confirmation window、stability gate
+- 完成后可生成结果报告页与分享链接
+
+### API 侧
+
+常用接口：
 
 - `POST /sessions`
 - `GET /sessions/{session_id}`
@@ -65,154 +108,100 @@ Session API highlights:
 - `POST /sessions/{session_id}/comments`
 - `GET /sessions/{session_id}/result`
 - `GET /sessions/{session_id}/export`
-- `POST /sessions/{session_id}/restart`
-- `DELETE /sessions/{session_id}`
 - `GET /results/{session_id}`
 
-Result persistence:
+## 数据现状
 
-- In-progress sessions still live in `SessionStore`.
-- Completed cat-persona results are cached in SQLite at `data/cat_psych.db`.
-- The first completed result generation stores:
-  - IRT T scores
-  - cat category
-  - roleplay-style analysis
-  - raw routed responses and user comments
-- Shared result links use `?result=<session_id>` and resolve through `GET /results/{session_id}`.
+当前在线题库不是 3320 题全量库，而是 50 题 starter bank。
 
-Cat persona assets:
+- 当前自适应题库：`data/ipip_items.json`
+- 当前中文翻译表：`data/ipip_items_zh.json`
+- 当前题目分配表：`data/ipip_item_assignment_table.json`
+- 当前默认参数：`data/mock_params_keyed.pt`
+- 历史/实验参数：`data/mock_params.pt`
+- 全量抓取档案：`data/ipip_full_item_bank.json`
 
-- Static artwork lives under `web/cats/`.
-- Mapping from English category keys to Chinese titles and images is stored in `data/cat_mapping.json`.
-- DeepSeek integration lives behind a fallback-safe skeleton in `llm/deepseek_client.py`.
-- DeepSeek credentials can be filled into the project-root `.env` file:
-  - `DEEPSEEK_API_KEY`
-  - `DEEPSEEK_BASE_URL`
-  - `DEEPSEEK_MODEL`
+补充说明：
 
-The Web setup panel now lets you tune:
+- `data/ipip_full_item_bank.json` 是资料档案，不是当前 Web/API 直接使用的在线题库。
+- 当前默认交互路径仍围绕 50 题 starter bank。
 
-- `param_mode`
-- `max_items`
-- `min_items`
-- `coverage_min_per_dimension`
-- smart precision and stability behavior through the staged stopping flow
+## 核心配置
 
-The live session view uses a lookup-table progress estimate so users see:
+当前默认交互配置大意如下：
 
-- `current question / estimated total items`
-- estimated completion percent
-- current evidence stage
+- `param_mode=keyed`
+- `max_items=30`
+- `min_items=5`
+- `coverage_min_per_dimension=2`
+- `stop_mean_standard_error=0.65`
+- `stop_stability_score=0.7`
 
-After the final routed item, the Web app now offers an optional free-text comment box before generating the final cat-persona result.
+这些参数可以通过 Web 面板或创建 session 的请求体调整。
 
-## Data Preparation
+## 测试
 
-Official raw IPIP files are stored under `data/raw/`.
-
-Regenerate normalized JSON/CSV files:
-
-```powershell
-conda run -n IPIP python scripts\prepare_ipip_data.py
-```
-
-Generated outputs:
-
-- `data/ipip_full_item_bank.json`
-- `data/ipip_full_item_bank.csv`
-- `data/ipip_item_assignment_table.json`
-- `data/ipip_item_assignment_table.csv`
-
-## Adaptive Engine
-
-The first engine pass supports two scoring modes:
-
-- `binary_2pl`: stable MVP path that maps Likert 1-2 to 0, 4-5 to 1, and skips theta updates for neutral 3.
-- `grm`: experimental graded response path that derives four ordered thresholds from the current mock `b` parameter at runtime.
-- `classical_big5`: traditional IPIP-style baseline scorer that reverse-keys items and averages Likert scores per trait for comparison.
-
-The router now applies a small coverage guard before pure maximum-information selection. By default, it tries to gather at least two answered items per Big-Five dimension before fully relaxing into global Fisher-information routing. The Web result view marks classical trait comparisons with `low evidence` when a trait has fewer than two answered items.
-The result payload now also includes a rules-based interpretation layer with an overview, higher/lower tendency notes, and low-evidence cautions.
-It also includes a `progress_estimate` block with `estimated_total_items`, `estimated_completion_percent`, `estimate_source`, `confidence_profile`, and `evidence_stage`.
-
-Smoke test:
+### 跑全部测试
 
 ```powershell
 conda run -n IPIP pytest -q
 ```
 
-Run a small simulation comparing both engine paths:
+### 只跑 API 测试
 
 ```powershell
-conda run -n IPIP python scripts\simulate_adaptive_sessions.py --max-items 12
+conda run -n IPIP python -m pytest tests\test_api.py -q
 ```
 
-Benchmark several early-stopping rule combinations:
+### 只跑 LLM / 翻译相关测试
 
 ```powershell
-conda activate IPIP
-python scripts\benchmark_stopping_rules.py --max-items 50 --param-mode legacy
+conda run -n IPIP python -m pytest tests\test_llm.py -q
 ```
 
-Generate a key-aware mock parameter file for reverse-keyed items:
+## 常见开发命令
+
+### 重建 IPIP 原始数据产物
 
 ```powershell
-conda activate IPIP
-python scripts\generate_key_aware_mock_params.py --output data\mock_params_keyed.pt
+conda run -n IPIP python scripts\prepare_ipip_data.py
 ```
 
-Run the same benchmark with the key-aware parameter baseline:
+### 跑一个小型 adaptive session 仿真
 
 ```powershell
-conda activate IPIP
-python scripts\benchmark_stopping_rules.py --max-items 50 --param-mode keyed
+conda run -n IPIP python scripts\simulate_adaptive_sessions.py --max-items 12 --param-mode keyed
 ```
 
-Run simulations with an explicit parameter mode:
+### 跑 stopping rule benchmark
 
 ```powershell
-conda activate IPIP
-python scripts\simulate_adaptive_sessions.py --max-items 12 --param-mode legacy
-python scripts\simulate_adaptive_sessions.py --max-items 12 --param-mode keyed
+conda run -n IPIP python scripts\benchmark_stopping_rules.py --max-items 50 --param-mode keyed
 ```
 
-Generate a side-by-side legacy vs keyed comparison bundle:
+### 生成 keyed mock 参数
 
 ```powershell
-conda activate IPIP
-python scripts\compare_param_modes.py --max-items 50 --output data\param_mode_comparison.json
+conda run -n IPIP python scripts\generate_key_aware_mock_params.py --output data\mock_params_keyed.pt
 ```
 
-Run a manual terminal assessment:
+## 项目入口
 
-```powershell
-conda run -n IPIP python scripts\run_cli_assessment.py --model binary_2pl --max-items 12
-```
+如果你要继续开发，先看这几个文件就够了：
 
-The CLI prints an ASCII-safe disclaimer for Windows `conda run` compatibility; JSON output keeps the original Chinese disclaimer.
+- `api/app.py`：Web/API 入口，session/result 生命周期
+- `services/assessment_session.py`：CAT 会话状态机、early stop、confirmation
+- `engine/irt_model.py`：默认参数与题库入口
+- `web/app.js`：前端交互与结果页渲染
+- `tests/test_api.py`：主回归测试
 
-Run the CLI in non-interactive demo mode:
+## 现阶段边界
 
-```powershell
-conda run -n IPIP python scripts\run_cli_assessment.py --demo-responses 5,4,3,2,1 --max-items 5
-```
+- 当前是 Big Five 自适应测评原型，不是临床诊断工具
+- 当前线上题库仍是 50 题 starter bank，不是 3320 题全量自适应版本
+- DeepSeek 分析层是增强项，不是测量真值来源
 
-## Design Notes
+## 伦理说明
 
-Parameter strategy:
-
-- `keyed` mode is now the default interactive experience for the Web app and API. It uses `data/mock_params_keyed.pt` and treats reverse-key direction as already encoded in `a`, so runtime code must not flip responses again.
-- `legacy` mode uses `data/mock_params.pt` and keeps reverse-key handling in the response-processing layer.
-- The project intentionally keeps both modes for comparison. `legacy` remains available for experiments and historical comparison, while `keyed + stop_mean_se=0.65 + max_items=30 + min_items=5` is the default user-facing path.
-
-- `docs/adaptive_measurement_vision.md`: product thesis, ethics boundary, technical direction, and MVP/research roadmap for the adaptive measurement architecture.
-
-## Ethics Notice
-
-This project uses open IPIP data for MVP development. It must not scrape, copy, reconstruct, or reverse-engineer protected MMPI items, proprietary norm tables, or protected clinical scoring mechanisms.
-
-Required user-facing disclaimer:
-
-```text
-本系统仅作为心理特质筛查与辅助参考工具，绝对不可替代专业精神科临床诊断。
-```
+本项目使用公开 IPIP 数据做原型验证。
+不得抓取、复刻、逆向或替代受保护的 MMPI 题本、专有常模表或临床评分体系。
