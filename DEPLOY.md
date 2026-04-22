@@ -65,9 +65,33 @@ Re-analyze an existing submission. This returns cached analysis when available:
 curl -X POST http://127.0.0.1:${PORT:-8000}/questionnaires/{submission_id}/analyze
 ```
 
+## Verified Local Drill
+
+The current `chore/deploy-prep` branch was exercised through Docker Compose with
+real HTTP requests:
+
+- Normal questionnaire: returned `200`, produced a `submission_id`, called the
+  external analysis API once, wrote SQLite data, and created a result cache.
+- Duplicate submission: repeated identical submissions reused the existing
+  `submission_id` and cached analysis without another external API call.
+- Extreme legal input: a near-limit payload with 95 answers, one field near 1000
+  characters, and total questionnaire text under 4000 characters completed
+  successfully without timeout or server error.
+- Over-limit input: single field over 1000 characters, total text over 4000
+  characters, more than 100 answers, and empty questionnaires were rejected with
+  sanitized `422` responses and did not call the external API.
+- Rate limiting: questionnaire submit and analysis endpoints returned `429`
+  after their configured per-window limits.
+- Container restart persistence: `/app/data/app.sqlite3` and result cache files
+  remained available after restarting the app container.
+- External API failure: simulated upstream failure returned a controlled `502`,
+  did not write a failed submission, and did not log secrets.
+
 ## Deployment Risks
 
-- SQLite is suitable only for one host and low write concurrency.
 - Rate limits are in memory and reset on app restart.
-- Run behind HTTPS and a reverse proxy before exposing it publicly.
-- Keep `.env`, SQLite files, caches, and logs out of Git and Docker images.
+- SQLite is suitable only for one host and low write concurrency.
+- Concurrent duplicate-submission races have not been covered.
+- Disk-full behavior has not been covered.
+- Slow external API responses have not been covered.
+- HTTPS, reverse proxy, and authentication are not configured yet.

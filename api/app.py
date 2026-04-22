@@ -15,6 +15,8 @@ from pathlib import Path
 from typing import Any
 
 from fastapi import FastAPI, HTTPException, Request
+from fastapi.exceptions import RequestValidationError
+from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field, field_validator
 
 
@@ -36,6 +38,21 @@ _rate_buckets: dict[str, deque[float]] = defaultdict(deque)
 
 
 app = FastAPI()
+
+
+@app.exception_handler(RequestValidationError)
+async def validation_exception_handler(request: Request, exc: RequestValidationError) -> JSONResponse:
+    errors = []
+    for error in exc.errors():
+        sanitized = {
+            "type": error.get("type"),
+            "loc": error.get("loc"),
+            "msg": error.get("msg"),
+        }
+        if error.get("ctx"):
+            sanitized["ctx"] = error["ctx"]
+        errors.append(sanitized)
+    return JSONResponse(status_code=422, content={"detail": errors})
 
 
 class Answer(BaseModel):
