@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import logging
 import os
 import sqlite3
 import time
@@ -22,13 +23,15 @@ SQLITE_PATH = Path(os.getenv("SQLITE_PATH", str(DATA_DIR / "app.sqlite3")))
 RESULTS_DIR = Path(os.getenv("RESULTS_DIR", str(DATA_DIR / "results")))
 
 MAX_ANSWERS = int(os.getenv("MAX_ANSWERS", "100"))
-MAX_FIELD_CHARS = int(os.getenv("MAX_FIELD_CHARS", "2000"))
-MAX_TOTAL_CHARS = int(os.getenv("MAX_TOTAL_CHARS", "8000"))
+MAX_FIELD_CHARS = int(os.getenv("MAX_FIELD_CHARS", "1000"))
+MAX_TOTAL_CHARS = int(os.getenv("MAX_TOTAL_CHARS", "4000"))
 DUPLICATE_WINDOW_SECONDS = int(os.getenv("DUPLICATE_WINDOW_SECONDS", "300"))
 SUBMIT_LIMIT_PER_WINDOW = int(os.getenv("SUBMIT_LIMIT_PER_WINDOW", "5"))
 ANALYZE_LIMIT_PER_WINDOW = int(os.getenv("ANALYZE_LIMIT_PER_WINDOW", "3"))
 RATE_LIMIT_WINDOW_SECONDS = int(os.getenv("RATE_LIMIT_WINDOW_SECONDS", "60"))
 
+logging.basicConfig(level=os.getenv("LOG_LEVEL", "INFO"))
+logger = logging.getLogger("ipip")
 _rate_buckets: dict[str, deque[float]] = defaultdict(deque)
 
 
@@ -206,6 +209,7 @@ def call_external_analysis(payload: dict[str, Any]) -> str:
     if not api_key:
         raise HTTPException(status_code=503, detail="external analysis API is not configured")
 
+    logger.info("external_analysis_call payload_hash=%s", stable_hash(payload))
     prompt = (
         "请基于以下问卷回答给出简短、谨慎的心理状态分析。"
         "不要做医学诊断，输出应包含压力水平、主要风险和一条建议。\n\n"
@@ -231,6 +235,7 @@ def call_external_analysis(payload: dict[str, Any]) -> str:
             data = json.loads(resp.read().decode("utf-8"))
             return data["choices"][0]["message"]["content"]
     except (urllib.error.URLError, KeyError, IndexError, json.JSONDecodeError) as exc:
+        logger.warning("external_analysis_failed payload_hash=%s", stable_hash(payload))
         raise HTTPException(status_code=502, detail="external analysis API failed") from exc
 
 

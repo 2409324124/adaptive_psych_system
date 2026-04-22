@@ -37,6 +37,8 @@ Protections:
 - Rate limit window: `RATE_LIMIT_WINDOW_SECONDS`
 - Duplicate submission window: `DUPLICATE_WINDOW_SECONDS`
 - Input size limits: `MAX_ANSWERS`, `MAX_FIELD_CHARS`, `MAX_TOTAL_CHARS`
+  default to 100 answers, 1000 characters per field, and 4000 total
+  questionnaire characters.
 
 The limits are intentionally single-process and single-host. They are enough for
 low-concurrency deployment, but should be replaced before running multiple app
