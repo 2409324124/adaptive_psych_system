@@ -8,3 +8,9 @@ __pycache__
 .idea
 tests
 *.log
+data
+*.sqlite
+*.sqlite3
+*.db
+*.db-journal
+.pytest_cache

@@ -11,7 +11,7 @@ RUN python -m pip install -r requirements.txt
 
 COPY . .
 
-RUN mkdir -p /app/data/sessions \
+RUN mkdir -p /app/data/sessions /app/data/results \
     && adduser --disabled-password --gecos "" appuser \
     && chown -R appuser:appuser /app
 

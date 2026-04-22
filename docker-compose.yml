@@ -7,7 +7,7 @@ services:
     ports:
       - "${PORT:-8000}:8000"
     volumes:
-      - ipip_sessions:/app/data/sessions
+      - ipip_data:/app/data
 
 volumes:
-  ipip_sessions:
+  ipip_data:
