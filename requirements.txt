@@ -1,0 +1,13 @@
+--index-url https://download.pytorch.org/whl/cpu
+--extra-index-url https://pypi.org/simple
+
+torch==2.5.1
+numpy
+requests
+sqlalchemy
+fastapi
+openai
+python-dotenv
+uvicorn
+pytest
+pyyaml
