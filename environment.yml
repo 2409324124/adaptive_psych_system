@@ -1,19 +1,9 @@
 name: IPIP
 channels:
-  - pytorch
-  - nvidia
   - conda-forge
   - defaults
 dependencies:
   - python=3.11
-  - pytorch=2.5.1
-  - pytorch-cuda=12.4
-  - numpy
-  - requests
-  - sqlalchemy
-  - fastapi
-  - openai
-  - python-dotenv
-  - uvicorn
-  - pytest
-  - pyyaml
+  - pip
+  - pip:
+      - -r requirements.txt
