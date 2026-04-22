@@ -2,6 +2,13 @@
 
 This branch is prepared for a single-host, low-concurrency Docker Compose deployment.
 
+## Branch Policy
+
+- Current deployment branch: `chore/deploy-prep`
+- Cloud servers should deploy from `chore/deploy-prep` directly.
+- `main` is not the current deployment baseline.
+- If the project later needs one unified history, handle that as a separate task.
+
 ## Runtime
 
 - App: FastAPI served by Uvicorn
