@@ -5,6 +5,7 @@
 - Local path: `/home/miku/projects/IPIP`
 - Remote: `git@github.com:2409324124/adaptive_psych_system.git`
 - Current working/deployment branch: `chore/deploy-prep`
+- First deployment candidate commit: `885437f7e44b5a31e03ec9a0d2c144f0e3bd1e5c`
 - Do not use `main` as the deployment baseline for now.
 
 ## Branch Policy
