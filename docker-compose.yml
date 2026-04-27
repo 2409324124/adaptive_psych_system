@@ -1,11 +1,11 @@
 services:
   cat-psych:
+    image: ${IMAGE_NAME:-cat-psych:cpu}
     build:
       context: .
       dockerfile: Dockerfile
-    image: cat-psych:cpu
     ports:
-      - "8000:8000"
+      - "${PORT:-8000}:8000"
     environment:
       CAT_PSYCH_SESSION_BACKEND: json
       CAT_PSYCH_SESSION_DIR: /app/data/sessions
