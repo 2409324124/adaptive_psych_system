@@ -13,6 +13,8 @@
 - `GET /` must serve the questionnaire homepage from `web/index.html`.
 - Deployment should support a staged validation on port `8001` before cutting over
   to port `8000`.
+- Production verification on `2026-04-27` succeeded with the prebuilt image path,
+  not a remote rebuild.
 
 ## Runtime Shape
 
@@ -28,6 +30,8 @@
 ## Environment
 
 - Create `.env` from `.env.example`.
+- The deployment `.env` must be a pure dotenv file. Do not leave shell commands,
+  `docker run ...`, or other non-`KEY=VALUE` lines in it.
 - Required external analysis variables when using DeepSeek:
   - `DEEPSEEK_API_KEY`
   - `DEEPSEEK_BASE_URL`
@@ -45,6 +49,9 @@
 3. Set `PORT=8001` and start the stack for validation.
 4. Verify `GET /`, `GET /health`, and key CAT session flows.
 5. Stop the validation stack, switch `PORT=8000`, and bring it up again.
+6. If Cloudflare tunnel traffic still goes through the legacy
+   `adaptive_psych_system_default` network, reconnect the new container there with
+   the alias `app` so `cloudflared` can still resolve `http://app:8000`.
 
 ## Useful Commands
 
@@ -59,4 +66,10 @@ Use the preloaded image instead of a rebuild:
 
 ```bash
 IMAGE_NAME=adaptive-psych-main:test PORT=8001 docker compose up -d --no-build
+```
+
+Reconnect the new container to the legacy `cloudflared` network alias when needed:
+
+```bash
+docker network connect --alias app adaptive_psych_system_default adaptive_psych_main-cat-psych-1
 ```
