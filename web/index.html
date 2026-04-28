@@ -116,7 +116,7 @@
         </div>
         <section class="comment-panel" id="commentPanel" hidden>
           <p class="eyebrow">Final note</p>
-          <h3>还有什么想让猫娘听见的吗？</h3>
+          <h3>还有什么想补充告诉咱的吗？</h3>
           <p class="response-caption">
             可以补一句吐槽、补充说明，或者直接跳过。它会进入最终角色分析，但不会改变已经完成的量表分数。
           </p>
@@ -147,7 +147,7 @@
           </div>
           <div class="cat-result__copy">
             <p class="eyebrow">你的角色化结果</p>
-            <h3 id="catName">猫娘结果生成中</h3>
+            <h3 id="catName">角色结果生成中</h3>
             <p class="cat-analysis" id="catAnalysis"></p>
             <div class="share-card">
               <p class="metric-name">你的专属测试哈希码</p>
@@ -237,6 +237,12 @@
         </details>
       </section>
     </main>
+    <aside class="assistant-layer is-hidden" id="assistantLayer" aria-live="polite">
+      <div class="assistant-bubble" id="assistantBubble" hidden></div>
+      <div class="assistant-character" id="assistantCharacter">
+        <img id="assistantImage" alt="Assistant character" />
+      </div>
+    </aside>
     <script src="/static/app.js"></script>
   </body>
 </html>

@@ -57,10 +57,16 @@ const coverageGrid = document.querySelector("#coverageGrid");
 const irtScores = document.querySelector("#irtScores");
 const classicalScores = document.querySelector("#classicalScores");
 const experimentDetails = document.querySelector("#experimentDetails");
+const assistantLayer = document.querySelector("#assistantLayer");
+const assistantBubble = document.querySelector("#assistantBubble");
+const assistantImage = document.querySelector("#assistantImage");
 
 let sessionId = null;
 let currentQuestion = null;
 let submitting = false;
+let assistantState = "hidden";
+let assistantBubbleTimer = null;
+let assistantIdleTimer = null;
 
 const responseLabels = {
   1: "1 非常不准确 / Very inaccurate",
@@ -82,6 +88,22 @@ const evidenceStageCopy = {
   "screening plateau reached": "Screening plateau reached",
   "item cap reached": "Item cap reached",
   "item bank exhausted": "Item bank exhausted",
+};
+
+const assistantStateAssets = {
+  welcome: "/static/assistant/welcome.png",
+  idle: "/static/assistant/idle.png",
+  thinking: "/static/assistant/thinking.png",
+  happy: "/static/assistant/happy.png",
+  result: "/static/assistant/result.png",
+};
+
+const assistantBubbleCopy = {
+  welcome: "欢迎回来，咱陪你慢慢做完这轮小测。",
+  idle: "准备好了就点开始，咱会一直在这边陪着你。",
+  thinking: "咱在认真听你作答，下一题马上来。",
+  happy: "收到啦，这条回答咱已经记下。",
+  result: "结果已经整理好啦，来看看你更像什么角色。",
 };
 
 startBtn.addEventListener("click", startSession);
@@ -150,6 +172,9 @@ function resetApp(clearResultParam = true) {
   highlightList.innerHTML = "";
   lowlightList.innerHTML = "";
   cautionList.innerHTML = "";
+  setAssistantState("welcome");
+  showAssistantBubble(assistantBubbleCopy.welcome, { duration: 2400 });
+  scheduleAssistantIdle();
   updateProgress(
     { answered: 0, max_items: Number(maxItemsInput.value), remaining: Number(maxItemsInput.value), complete: false },
     null
@@ -159,6 +184,8 @@ function resetApp(clearResultParam = true) {
 
 async function startSession() {
   startBtn.disabled = true;
+  setAssistantState("happy");
+  showAssistantBubble("好呀，这就开始。", { duration: 1200 });
   try {
     const maxItems = Number(maxItemsInput.value);
     const minItems = Number(minItemsInput.value);
@@ -236,6 +263,8 @@ function renderQuestion(question) {
     );
     return;
   }
+  setAssistantState("thinking");
+  showAssistantBubble(assistantBubbleCopy.thinking, { duration: 2200 });
   commentPanel.hidden = true;
   questionArea.hidden = false;
   updateProgress(question.progress, question.progress_estimate);
@@ -271,6 +300,8 @@ async function submitResponse(value) {
     if (!response.ok) {
       throw new Error(payload.detail || "Failed to submit response.");
     }
+    setAssistantState("happy");
+    showAssistantBubble(assistantBubbleCopy.happy, { duration: 1200 });
     if (payload.complete) {
       currentQuestion = null;
       questionArea.hidden = true;
@@ -341,6 +372,8 @@ async function loadSharedResult(sharedSessionId) {
 function renderResultPayload(result) {
   sessionId = result.session_id;
   currentQuestion = null;
+  setAssistantState("result");
+  showAssistantBubble(assistantBubbleCopy.result, { duration: 1800 });
   sessionStage.hidden = true;
   resultsEl.hidden = false;
   questionArea.hidden = true;
@@ -365,13 +398,16 @@ function renderResultPayload(result) {
   }
   renderScores(classicalScores, classical);
   renderCatResult(result);
+  window.setTimeout(() => {
+    setAssistantState("hidden");
+  }, 900);
 }
 
 function renderCatResult(result) {
   catImage.src = result.cat_image || "";
   catImage.hidden = !result.cat_image;
   catImage.style.objectPosition = result.cat_image_position || "50% 50%";
-  catName.textContent = result.cat_name || "猫娘结果准备中";
+  catName.textContent = result.cat_name || "角色结果准备中";
   catAnalysis.textContent = result.cat_analysis || "这份结果还没有生成角色化文案。";
   shareHash.textContent = result.session_id || "";
 }
@@ -621,6 +657,58 @@ function appendBubble(role, text) {
   }
   chatLog.appendChild(item);
   chatLog.scrollTop = chatLog.scrollHeight;
+}
+
+function setAssistantState(state, options = {}) {
+  assistantState = state;
+  window.clearTimeout(assistantIdleTimer);
+  if (!assistantLayer || !assistantImage) {
+    return;
+  }
+  if (state === "hidden") {
+    assistantLayer.classList.add("is-hidden");
+    return;
+  }
+  const asset = assistantStateAssets[state] || assistantStateAssets.idle;
+  assistantLayer.classList.remove("is-hidden");
+  assistantImage.classList.add("is-switching");
+  if (assistantImage.getAttribute("src") !== asset) {
+    assistantImage.src = asset;
+  }
+  if (!options.keepBubble && assistantBubble && !assistantBubble.textContent) {
+    assistantBubble.hidden = true;
+    assistantBubble.classList.remove("is-visible");
+  }
+  window.setTimeout(() => {
+    assistantImage.classList.remove("is-switching");
+  }, 180);
+}
+
+function showAssistantBubble(text, options = {}) {
+  if (!assistantBubble || !text) {
+    return;
+  }
+  const duration = options.duration ?? 1800;
+  window.clearTimeout(assistantBubbleTimer);
+  assistantBubble.textContent = text;
+  assistantBubble.hidden = false;
+  assistantBubble.classList.add("is-visible");
+  assistantBubbleTimer = window.setTimeout(() => {
+    assistantBubble.classList.remove("is-visible");
+    window.setTimeout(() => {
+      assistantBubble.hidden = true;
+      assistantBubble.textContent = "";
+    }, 180);
+  }, duration);
+}
+
+function scheduleAssistantIdle(delay = 2600) {
+  window.clearTimeout(assistantIdleTimer);
+  assistantIdleTimer = window.setTimeout(() => {
+    if (!sessionId && sessionStage.hidden && resultsEl.hidden) {
+      setAssistantState("idle");
+    }
+  }, delay);
 }
 
 function setResponseButtonsDisabled(disabled) {
