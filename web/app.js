@@ -5,6 +5,10 @@ const exportBtn = document.querySelector("#exportBtn");
 const copyLinkBtn = document.querySelector("#copyLinkBtn");
 const commentSubmitBtn = document.querySelector("#commentSubmitBtn");
 const commentSkipBtn = document.querySelector("#commentSkipBtn");
+const hashLookupBtn = document.querySelector("#hashLookupBtn");
+const hashExportBtn = document.querySelector("#hashExportBtn");
+const hashLookupInput = document.querySelector("#hashLookupInput");
+const hashLookupStatus = document.querySelector("#hashLookupStatus");
 const paramModeInput = document.querySelector("#paramMode");
 const modelInput = document.querySelector("#model");
 const maxItemsInput = document.querySelector("#maxItems");
@@ -66,7 +70,9 @@ let currentQuestion = null;
 let submitting = false;
 let assistantState = "hidden";
 let assistantBubbleTimer = null;
+let assistantBubbleHideTimer = null;
 let assistantIdleTimer = null;
+let assistantResultHideTimer = null;
 
 const responseLabels = {
   1: "1 非常不准确 / Very inaccurate",
@@ -106,6 +112,10 @@ const assistantBubbleCopy = {
   result: "结果已经整理好啦，来看看你更像什么角色。",
 };
 
+const shouldHideAssistantOnPortableScreen = () =>
+  window.matchMedia("(max-width: 640px)").matches ||
+  window.matchMedia("(max-width: 1220px) and (orientation: portrait)").matches;
+
 startBtn.addEventListener("click", startSession);
 restartBtn.addEventListener("click", restartSession);
 newSessionBtn.addEventListener("click", resetApp);
@@ -113,6 +123,13 @@ exportBtn.addEventListener("click", exportSession);
 copyLinkBtn.addEventListener("click", copyShareLink);
 commentSubmitBtn.addEventListener("click", submitCommentAndLoadResult);
 commentSkipBtn.addEventListener("click", loadResults);
+hashLookupBtn.addEventListener("click", loadHashResult);
+hashExportBtn.addEventListener("click", exportHashRecord);
+hashLookupInput.addEventListener("keydown", (event) => {
+  if (event.key === "Enter") {
+    loadHashResult();
+  }
+});
 paramModeInput.addEventListener("change", renderSetupSummary);
 modelInput.addEventListener("change", renderSetupSummary);
 maxItemsInput.addEventListener("input", renderSetupSummary);
@@ -129,6 +146,7 @@ function resetApp(clearResultParam = true) {
   sessionId = null;
   currentQuestion = null;
   submitting = false;
+  window.clearTimeout(assistantResultHideTimer);
   setupStage.hidden = false;
   setupPanel.hidden = false;
   sessionStage.hidden = true;
@@ -141,6 +159,8 @@ function resetApp(clearResultParam = true) {
   commentInput.value = "";
   sessionConfigLabel.textContent = "";
   setupSummary.textContent = "";
+  hashLookupInput.value = "";
+  hashLookupStatus.textContent = "";
   questionText.textContent = "";
   questionTextEn.textContent = "";
   responsesEl.innerHTML = "";
@@ -351,13 +371,25 @@ async function loadResults() {
   if (!sessionId) {
     return;
   }
-  const response = await fetch(`/sessions/${sessionId}/result`);
-  const result = await response.json();
-  if (!response.ok) {
-    window.alert(result.detail || "Failed to load results.");
-    return;
+  commentSubmitBtn.disabled = true;
+  commentSkipBtn.disabled = true;
+  setAssistantState("thinking");
+  showAssistantBubble("结果整理中，请稍候...", { duration: 12000 });
+  try {
+    const response = await fetch(`/sessions/${sessionId}/result`);
+    const result = await response.json();
+    if (!response.ok) {
+      window.alert(result.detail || "Failed to load results.");
+      return;
+    }
+    renderResultPayload(result);
+  } catch (error) {
+    window.alert(`载入结果失败：${error.message}。请再试一次。`);
+    setAssistantState("welcome");
+  } finally {
+    commentSubmitBtn.disabled = false;
+    commentSkipBtn.disabled = false;
   }
-  renderResultPayload(result);
 }
 
 async function loadSharedResult(sharedSessionId) {
@@ -367,6 +399,44 @@ async function loadSharedResult(sharedSessionId) {
     throw new Error(payload.detail || "Failed to load shared result.");
   }
   renderResultPayload(payload);
+}
+
+function normalizeHashInput() {
+  return hashLookupInput.value.trim();
+}
+
+function setHashLookupStatus(message) {
+  hashLookupStatus.textContent = message;
+}
+
+async function loadHashResult() {
+  const hash = normalizeHashInput();
+  if (!hash) {
+    setHashLookupStatus("先粘贴测试哈希码。");
+    return;
+  }
+  hashLookupBtn.disabled = true;
+  setHashLookupStatus("正在取回结果...");
+  try {
+    await loadSharedResult(hash);
+    const url = new URL(window.location.href);
+    url.searchParams.set("result", hash);
+    window.history.replaceState({}, "", url);
+  } catch (error) {
+    setHashLookupStatus(error.message);
+  } finally {
+    hashLookupBtn.disabled = false;
+  }
+}
+
+function exportHashRecord() {
+  const hash = normalizeHashInput();
+  if (!hash) {
+    setHashLookupStatus("先粘贴测试哈希码。");
+    return;
+  }
+  setHashLookupStatus("正在打开 JSON 下载...");
+  window.open(`/records/${encodeURIComponent(hash)}/export`, "_blank", "noopener");
 }
 
 function renderResultPayload(result) {
@@ -398,14 +468,20 @@ function renderResultPayload(result) {
   }
   renderScores(classicalScores, classical);
   renderCatResult(result);
-  window.setTimeout(() => {
+  window.clearTimeout(assistantResultHideTimer);
+  assistantResultHideTimer = window.setTimeout(() => {
     setAssistantState("hidden");
   }, 900);
 }
 
 function renderCatResult(result) {
-  catImage.src = result.cat_image || "";
-  catImage.hidden = !result.cat_image;
+  if (result.cat_image) {
+    catImage.src = result.cat_image;
+    catImage.hidden = false;
+  } else {
+    catImage.removeAttribute("src");
+    catImage.hidden = true;
+  }
   catImage.style.objectPosition = result.cat_image_position || "50% 50%";
   catName.textContent = result.cat_name || "角色结果准备中";
   catAnalysis.textContent = result.cat_analysis || "这份结果还没有生成角色化文案。";
@@ -662,19 +738,24 @@ function appendBubble(role, text) {
 function setAssistantState(state, options = {}) {
   assistantState = state;
   window.clearTimeout(assistantIdleTimer);
+  window.clearTimeout(assistantBubbleTimer);
+  window.clearTimeout(assistantBubbleHideTimer);
   if (!assistantLayer || !assistantImage) {
     return;
   }
-  if (state === "hidden") {
+  if (state === "hidden" || shouldHideAssistantOnPortableScreen()) {
     assistantLayer.classList.add("is-hidden");
+    if (assistantBubble) {
+      assistantBubble.classList.remove("is-visible");
+      assistantBubble.hidden = true;
+      assistantBubble.textContent = "";
+    }
     return;
   }
   const asset = assistantStateAssets[state] || assistantStateAssets.idle;
   assistantLayer.classList.remove("is-hidden");
   assistantImage.classList.add("is-switching");
-  if (assistantImage.getAttribute("src") !== asset) {
-    assistantImage.src = asset;
-  }
+  setAssistantImageSource(asset);
   if (!options.keepBubble && assistantBubble && !assistantBubble.textContent) {
     assistantBubble.hidden = true;
     assistantBubble.classList.remove("is-visible");
@@ -684,22 +765,45 @@ function setAssistantState(state, options = {}) {
   }, 180);
 }
 
+function setAssistantImageSource(asset) {
+  if (!assistantImage || assistantImage.getAttribute("src") === asset) {
+    return;
+  }
+  assistantImage.onerror = () => {
+    assistantLayer?.classList.add("is-hidden");
+  };
+  assistantImage.src = asset;
+}
+
 function showAssistantBubble(text, options = {}) {
   if (!assistantBubble || !text) {
     return;
   }
   const duration = options.duration ?? 1800;
   window.clearTimeout(assistantBubbleTimer);
+  window.clearTimeout(assistantBubbleHideTimer);
   assistantBubble.textContent = text;
   assistantBubble.hidden = false;
   assistantBubble.classList.add("is-visible");
   assistantBubbleTimer = window.setTimeout(() => {
     assistantBubble.classList.remove("is-visible");
-    window.setTimeout(() => {
+    assistantBubbleHideTimer = window.setTimeout(() => {
       assistantBubble.hidden = true;
       assistantBubble.textContent = "";
     }, 180);
   }, duration);
+}
+
+function syncAssistantVisibility() {
+  if (!assistantLayer) {
+    return;
+  }
+  if (assistantState === "hidden" || shouldHideAssistantOnPortableScreen()) {
+    assistantLayer.classList.add("is-hidden");
+    return;
+  }
+  setAssistantImageSource(assistantStateAssets[assistantState] || assistantStateAssets.idle);
+  assistantLayer.classList.remove("is-hidden");
 }
 
 function scheduleAssistantIdle(delay = 2600) {
@@ -731,5 +835,8 @@ async function boot() {
     resetApp();
   }
 }
+
+window.matchMedia("(max-width: 640px)").addEventListener("change", syncAssistantVisibility);
+window.matchMedia("(max-width: 1220px) and (orientation: portrait)").addEventListener("change", syncAssistantVisibility);
 
 boot();

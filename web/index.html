@@ -78,6 +78,26 @@
               </label>
             </div>
           </details>
+          <section class="hash-panel" id="hashPanel" aria-label="Retrieve saved result">
+            <div>
+              <p class="eyebrow">Saved result</p>
+              <h3>用测试哈希码取回记录</h3>
+              <p class="response-caption">
+                已完成的测试可以用结果页里的哈希码取回结果，或直接下载答题 JSON 记录。
+              </p>
+            </div>
+            <div class="hash-actions">
+              <label>
+                测试哈希码
+                <input id="hashLookupInput" type="text" inputmode="text" autocomplete="off" placeholder="粘贴你的测试哈希码" />
+              </label>
+              <div class="results-actions">
+                <button id="hashLookupBtn" class="secondary" type="button">查看结果</button>
+                <button id="hashExportBtn" class="secondary" type="button">下载 JSON</button>
+              </div>
+              <p class="response-caption" id="hashLookupStatus"></p>
+            </div>
+          </section>
         </div>
       </section>
 

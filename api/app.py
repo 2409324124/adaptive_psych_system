@@ -4,6 +4,7 @@ import json
 import logging
 import os
 import threading
+from concurrent.futures import ThreadPoolExecutor, TimeoutError
 from contextlib import contextmanager
 from dataclasses import dataclass
 from functools import lru_cache
@@ -34,6 +35,8 @@ class PersistLockEntry:
 
 _PERSIST_LOCKS: dict[str, PersistLockEntry] = {}
 _PERSIST_LOCKS_GUARD = threading.Lock()
+_LLM_EXECUTOR = ThreadPoolExecutor(max_workers=int(os.getenv("CAT_PSYCH_LLM_WORKERS", "4")))
+_LLM_TIMEOUT_SECONDS = float(os.getenv("CAT_PSYCH_LLM_TIMEOUT_SECONDS", "30"))
 
 SESSION_STORE = SessionStore(
     backend=os.getenv("CAT_PSYCH_SESSION_BACKEND", "memory"),
@@ -202,6 +205,26 @@ def safe_delete_runtime_session(session_id: str) -> None:
         )
 
 
+def analyze_personality_with_timeout(result_payload: dict[str, object]) -> dict[str, str | None]:
+    future = _LLM_EXECUTOR.submit(
+        analyze_personality,
+        ocean_scores=result_payload["irt_t_scores"],
+        user_comments=result_payload.get("user_comments", []),
+        structured_summary=result_payload.get("interpretation", {}).get("structured_summary"),
+    )
+    try:
+        return future.result(timeout=_LLM_TIMEOUT_SECONDS)
+    except TimeoutError:
+        LOGGER.warning(
+            "LLM analysis timed out; using fallback persona analysis.",
+            extra={"timeout_seconds": _LLM_TIMEOUT_SECONDS},
+        )
+        return {
+            "category_key": None,
+            "analysis": "结果已生成，但角色化分析暂时超时。你仍可以查看量表结果和导出答题记录。",
+        }
+
+
 def persist_session_result(session, db: Session) -> dict[str, object]:
     if not session.is_complete:
         return session.result()
@@ -213,11 +236,7 @@ def persist_session_result(session, db: Session) -> dict[str, object]:
             return combine_db_record(record)
 
         result_payload = session.result()
-        llm_result = analyze_personality(
-            ocean_scores=result_payload["irt_t_scores"],
-            user_comments=result_payload.get("user_comments", []),
-            structured_summary=result_payload.get("interpretation", {}).get("structured_summary"),
-        )
+        llm_result = analyze_personality_with_timeout(result_payload)
         persisted = UserSessionRecord(
             session_id=session.session_id,
             ocean_scores=result_payload["irt_t_scores"],
@@ -349,6 +368,16 @@ def persisted_result(session_id: str, db: Session = Depends(get_db)) -> dict[str
 def export_result(session_id: str, db: Session = Depends(get_db)) -> JSONResponse:
     content = get_result_payload(session_id, db)
     headers = {"Content-Disposition": f'attachment; filename="cat-psych-{session_id}.json"'}
+    return JSONResponse(content=content, headers=headers)
+
+
+@app.get("/records/{session_id}/export")
+def export_persisted_record(session_id: str, db: Session = Depends(get_db)) -> JSONResponse:
+    record = get_persisted_record(session_id, db)
+    if record is None:
+        raise HTTPException(status_code=404, detail="Unknown or unfinished session_id")
+    content = combine_db_record(record)
+    headers = {"Content-Disposition": f'attachment; filename="cat-psych-record-{session_id}.json"'}
     return JSONResponse(content=content, headers=headers)
 
 
