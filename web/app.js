@@ -112,9 +112,7 @@ const assistantBubbleCopy = {
   result: "结果已经整理好啦，来看看你更像什么角色。",
 };
 
-const shouldHideAssistantOnPortableScreen = () =>
-  window.matchMedia("(max-width: 640px)").matches ||
-  window.matchMedia("(max-width: 1220px) and (orientation: portrait)").matches;
+const shouldHideAssistantOnPortableScreen = () => false;
 
 startBtn.addEventListener("click", startSession);
 restartBtn.addEventListener("click", restartSession);
