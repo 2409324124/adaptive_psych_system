@@ -55,6 +55,149 @@ Important:
 - Do not include shell snippets, `docker run ...`, or pasted command history in
   this file.
 
+## Google Drive Data Backups
+
+This deployment keeps runtime data on the server local disk:
+
+- Host data directory: `./data`
+- Container data directory: `/app/data`
+- SQLite database: `./data/cat_psych.db`
+- Session files: `./data/sessions`
+- Optional result files: `./data/results`
+
+Do not mount Google Drive as `./data` or `/app/data`. SQLite must remain on the
+server local disk; Google Drive is only a backup target.
+
+Backups are created by [`scripts/backup_data.sh`](scripts/backup_data.sh). The
+script:
+
+- checks that `./data/cat_psych.db` exists before backing up;
+- creates a consistent SQLite snapshot with Python's SQLite backup API;
+- includes `./data/sessions`;
+- includes `./data/results` when that directory exists;
+- creates timestamped files such as `ipip-data-20260430T030000Z.tar.gz`;
+- uploads the archive and a `.sha256` checksum with `rclone`;
+- does not read or print `.env`, API keys, or rclone secrets.
+
+### Recommended encrypted rclone target
+
+Psychological assessment data is sensitive. Prefer an rclone `crypt` remote on
+top of Google Drive:
+
+Install rclone if the server does not have it:
+
+```bash
+sudo apt-get update
+sudo apt-get install -y rclone
+```
+
+```bash
+rclone config
+```
+
+Create a normal Google Drive remote first, for example `gdrive:`. Then create a
+crypt remote, for example:
+
+```text
+Name: gdrive-crypt
+Type: crypt
+Remote to encrypt/decrypt: gdrive:ipip-backups
+Filename encryption: standard
+Directory name encryption: true
+```
+
+The backup script refuses to upload to a non-crypt remote by default. If you
+temporarily set `IPIP_BACKUP_ALLOW_UNENCRYPTED=1`, the archive will be uploaded
+without rclone crypt encryption. That is a privacy risk and should only be used
+as a short-lived emergency fallback after documenting who can access the Drive
+folder.
+
+### Manual backup
+
+From the deployment directory:
+
+```bash
+cd /home/xu2409324124/adaptive_psych_main
+IPIP_BACKUP_REMOTE='gdrive-crypt:ipip-backups' ./scripts/backup_data.sh
+```
+
+Dry-run without uploading:
+
+```bash
+cd /home/xu2409324124/adaptive_psych_main
+IPIP_BACKUP_REMOTE='gdrive-crypt:ipip-backups' ./scripts/backup_data.sh --dry-run
+```
+
+List uploaded backups:
+
+```bash
+rclone lsf 'gdrive-crypt:ipip-backups' --include 'ipip-data-*.tar.gz'
+```
+
+Verify an uploaded archive and checksum manually:
+
+```bash
+mkdir -p /tmp/ipip-restore-check
+rclone copyto 'gdrive-crypt:ipip-backups/ipip-data-YYYYMMDDTHHMMSSZ.tar.gz' /tmp/ipip-restore-check/ipip-data.tar.gz
+rclone copyto 'gdrive-crypt:ipip-backups/ipip-data-YYYYMMDDTHHMMSSZ.tar.gz.sha256' /tmp/ipip-restore-check/ipip-data.tar.gz.sha256
+cd /tmp/ipip-restore-check
+sha256sum -c ipip-data.tar.gz.sha256
+tar -tzf ipip-data.tar.gz | head
+```
+
+### Scheduled backup every 3 days
+
+Cron example:
+
+```cron
+0 3 */3 * * cd /home/xu2409324124/adaptive_psych_main && IPIP_BACKUP_REMOTE='gdrive-crypt:ipip-backups' ./scripts/backup_data.sh >> /var/log/ipip-data-backup.log 2>&1
+```
+
+Install with:
+
+```bash
+crontab -e
+```
+
+Make sure the cron user has access to the rclone config. If rclone was
+configured as another user, either run cron as that user or set
+`RCLONE_CONFIG=/path/to/rclone.conf` in the crontab. Do not store `.env` or API
+keys in the crontab.
+
+### Restore from backup
+
+Use a maintenance window. Stop the app before replacing SQLite and session
+files.
+
+```bash
+cd /home/xu2409324124/adaptive_psych_main
+mkdir -p /tmp/ipip-restore
+rclone copyto 'gdrive-crypt:ipip-backups/ipip-data-YYYYMMDDTHHMMSSZ.tar.gz' /tmp/ipip-restore/ipip-data.tar.gz
+rclone copyto 'gdrive-crypt:ipip-backups/ipip-data-YYYYMMDDTHHMMSSZ.tar.gz.sha256' /tmp/ipip-restore/ipip-data.tar.gz.sha256
+cd /tmp/ipip-restore
+sha256sum -c ipip-data.tar.gz.sha256
+mkdir extracted
+tar -xzf ipip-data.tar.gz -C extracted
+```
+
+Before copying restored data into place, keep a local emergency copy of the
+current data:
+
+```bash
+cd /home/xu2409324124/adaptive_psych_main
+cp -a data "data.before-restore.$(date -u +%Y%m%dT%H%M%SZ)"
+docker compose stop cat-psych
+cp /tmp/ipip-restore/extracted/cat_psych.db data/cat_psych.db
+rm -rf data/sessions
+cp -a /tmp/ipip-restore/extracted/sessions data/sessions
+if [ -d /tmp/ipip-restore/extracted/results ]; then
+  rm -rf data/results
+  cp -a /tmp/ipip-restore/extracted/results data/results
+fi
+docker compose up -d
+curl http://127.0.0.1:${PORT:-8000}/health
+```
+
 ## Server Rollout
 
 Recommended rollout on the target host:
