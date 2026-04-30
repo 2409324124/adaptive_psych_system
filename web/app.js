@@ -9,6 +9,9 @@ const hashLookupBtn = document.querySelector("#hashLookupBtn");
 const hashExportBtn = document.querySelector("#hashExportBtn");
 const hashLookupInput = document.querySelector("#hashLookupInput");
 const hashLookupStatus = document.querySelector("#hashLookupStatus");
+const mobileIntroModal = document.querySelector("#mobileIntroModal");
+const mobileIntroStartBtn = document.querySelector("#mobileIntroStartBtn");
+const mobileIntroDismissBtn = document.querySelector("#mobileIntroDismissBtn");
 const paramModeInput = document.querySelector("#paramMode");
 const modelInput = document.querySelector("#model");
 const maxItemsInput = document.querySelector("#maxItems");
@@ -64,6 +67,10 @@ const experimentDetails = document.querySelector("#experimentDetails");
 const assistantLayer = document.querySelector("#assistantLayer");
 const assistantBubble = document.querySelector("#assistantBubble");
 const assistantImage = document.querySelector("#assistantImage");
+const compactMobileQuery = window.matchMedia("(max-width: 1220px) and (orientation: portrait)");
+const smallMobileQuery = window.matchMedia("(max-width: 640px)");
+const mobileIntroStorageKey = "catPsychMobileIntroSeen";
+const maxMobileChatBubbles = 10;
 
 let sessionId = null;
 let currentQuestion = null;
@@ -128,6 +135,15 @@ hashLookupInput.addEventListener("keydown", (event) => {
     loadHashResult();
   }
 });
+mobileIntroStartBtn?.addEventListener("click", () => {
+  markMobileIntroSeen();
+  hideMobileIntro();
+  startSession();
+});
+mobileIntroDismissBtn?.addEventListener("click", () => {
+  markMobileIntroSeen();
+  hideMobileIntro();
+});
 paramModeInput.addEventListener("change", renderSetupSummary);
 modelInput.addEventListener("change", renderSetupSummary);
 maxItemsInput.addEventListener("input", renderSetupSummary);
@@ -151,6 +167,7 @@ function resetApp(clearResultParam = true) {
   questionArea.hidden = false;
   commentPanel.hidden = true;
   resultsEl.hidden = true;
+  hideMobileIntro();
   advancedPanel.open = false;
   sessionDetails.open = false;
   experimentDetails.open = false;
@@ -730,7 +747,67 @@ function appendBubble(role, text) {
     item.append(bodySecondary);
   }
   chatLog.appendChild(item);
+  trimMobileChatLog();
+  scrollChatToBottom();
+}
+
+function isCompactMobileViewport() {
+  return compactMobileQuery.matches || smallMobileQuery.matches;
+}
+
+function trimMobileChatLog() {
+  if (!isCompactMobileViewport()) {
+    return;
+  }
+  while (chatLog.children.length > maxMobileChatBubbles) {
+    chatLog.firstElementChild?.remove();
+  }
+}
+
+function scrollChatToBottom() {
   chatLog.scrollTop = chatLog.scrollHeight;
+}
+
+function hasSeenMobileIntro() {
+  try {
+    return window.localStorage.getItem(mobileIntroStorageKey) === "true";
+  } catch (error) {
+    return true;
+  }
+}
+
+function markMobileIntroSeen() {
+  try {
+    window.localStorage.setItem(mobileIntroStorageKey, "true");
+  } catch (error) {
+    // Storage can be unavailable in private or embedded contexts; the modal should still close.
+  }
+}
+
+function showMobileIntro() {
+  if (!mobileIntroModal) {
+    return;
+  }
+  mobileIntroModal.hidden = false;
+  document.body.classList.add("mobile-intro-open");
+}
+
+function hideMobileIntro() {
+  if (!mobileIntroModal) {
+    return;
+  }
+  mobileIntroModal.hidden = true;
+  document.body.classList.remove("mobile-intro-open");
+}
+
+function maybeShowMobileIntro(params) {
+  if (!mobileIntroModal || params.get("result")) {
+    return;
+  }
+  if (!isCompactMobileViewport() || hasSeenMobileIntro()) {
+    return;
+  }
+  showMobileIntro();
 }
 
 function setAssistantState(state, options = {}) {
@@ -824,6 +901,7 @@ async function boot() {
   resetApp(false);
   const resultId = params.get("result");
   if (!resultId) {
+    maybeShowMobileIntro(params);
     return;
   }
   try {
@@ -834,7 +912,7 @@ async function boot() {
   }
 }
 
-window.matchMedia("(max-width: 640px)").addEventListener("change", syncAssistantVisibility);
-window.matchMedia("(max-width: 1220px) and (orientation: portrait)").addEventListener("change", syncAssistantVisibility);
+smallMobileQuery.addEventListener("change", syncAssistantVisibility);
+compactMobileQuery.addEventListener("change", syncAssistantVisibility);
 
 boot();

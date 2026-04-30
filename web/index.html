@@ -4,7 +4,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>CAT-Psych</title>
-    <link rel="stylesheet" href="/static/style.css?v=3aed18a" />
+    <link rel="stylesheet" href="/static/style.css?v=mobile-20260430" />
   </head>
   <body>
     <main class="shell">
@@ -257,12 +257,30 @@
         </details>
       </section>
     </main>
+    <section class="mobile-intro-modal" id="mobileIntroModal" role="dialog" aria-modal="true" aria-labelledby="mobileIntroTitle" hidden>
+      <div class="mobile-intro-card">
+        <div class="mobile-intro-art">
+          <img src="/static/assistant/welcome.png" alt="" />
+        </div>
+        <div class="mobile-intro-copy">
+          <p class="eyebrow">CAT-Psych</p>
+          <h2 id="mobileIntroTitle">欢迎来到自适应人格小测</h2>
+          <p>这是一轮轻量的心理特质筛查，不替代专业临床诊断。</p>
+          <p>系统会根据你的回答动态挑选下一题，尽量用更少题目收集有效信息。</p>
+          <p>右下角小助手会陪你完成测试；完成后可以用哈希码取回记录。</p>
+        </div>
+        <div class="mobile-intro-actions">
+          <button id="mobileIntroStartBtn" type="button">开始测试</button>
+          <button id="mobileIntroDismissBtn" class="secondary" type="button">稍后再看/关闭</button>
+        </div>
+      </div>
+    </section>
     <aside class="assistant-layer is-hidden" id="assistantLayer" aria-live="polite">
       <div class="assistant-bubble" id="assistantBubble" hidden></div>
       <div class="assistant-character" id="assistantCharacter">
         <img id="assistantImage" alt="Assistant character" />
       </div>
     </aside>
-    <script src="/static/app.js?v=3aed18a"></script>
+    <script src="/static/app.js?v=mobile-20260430"></script>
   </body>
 </html>
