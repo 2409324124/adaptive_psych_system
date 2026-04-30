@@ -116,6 +116,15 @@ folder.
 
 From the deployment directory:
 
+Current production path, verified on `2026-04-30`:
+
+```text
+/home/xu2409324124/adaptive_psych_main
+```
+
+If a future host uses a different checkout path, replace this path in the
+manual, cron, and restore commands before installing the schedule.
+
 ```bash
 cd /home/xu2409324124/adaptive_psych_main
 IPIP_BACKUP_REMOTE='gdrive-crypt:ipip-backups' ./scripts/backup_data.sh
@@ -195,8 +204,14 @@ if [ -d /tmp/ipip-restore/extracted/results ]; then
   cp -a /tmp/ipip-restore/extracted/results data/results
 fi
 docker compose up -d
-curl http://127.0.0.1:${PORT:-8000}/health
+docker compose ps
+docker compose port cat-psych 8000
+curl http://127.0.0.1:8000/health
 ```
+
+The current production container publishes `cat-psych` on host port `8000`.
+If a future deployment maps the service to another host port, use the value
+shown by `docker compose port cat-psych 8000` in the final `curl` command.
 
 ## Server Rollout
 
