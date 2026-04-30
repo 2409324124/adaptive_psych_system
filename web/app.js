@@ -70,7 +70,6 @@ const assistantImage = document.querySelector("#assistantImage");
 const compactMobileQuery = window.matchMedia("(max-width: 1220px) and (orientation: portrait)");
 const narrowMobileQuery = window.matchMedia("(max-width: 860px)");
 const smallMobileQuery = window.matchMedia("(max-width: 640px)");
-const mobileIntroStorageKey = "catPsychMobileIntroSeen";
 const maxMobileChatBubbles = 10;
 
 let sessionId = null;
@@ -141,14 +140,12 @@ mobileIntroStartBtn?.addEventListener("click", () => {
     return;
   }
   mobileIntroStartBtn.disabled = true;
-  markMobileIntroSeen();
   hideMobileIntro();
   startSession().finally(() => {
     mobileIntroStartBtn.disabled = false;
   });
 });
 mobileIntroDismissBtn?.addEventListener("click", () => {
-  markMobileIntroSeen();
   hideMobileIntro();
 });
 document.addEventListener("keydown", handleMobileIntroKeydown);
@@ -223,6 +220,7 @@ function resetApp(clearResultParam = true) {
     null
   );
   renderSetupSummary();
+  maybeShowMobileIntro(new URLSearchParams(window.location.search));
 }
 
 async function startSession() {
@@ -776,24 +774,11 @@ function scrollChatToBottom() {
   chatLog.scrollTop = chatLog.scrollHeight;
 }
 
-function hasSeenMobileIntro() {
-  try {
-    return window.localStorage.getItem(mobileIntroStorageKey) === "true";
-  } catch (error) {
-    return true;
-  }
-}
-
-function markMobileIntroSeen() {
-  try {
-    window.localStorage.setItem(mobileIntroStorageKey, "true");
-  } catch (error) {
-    // Storage can be unavailable in private or embedded contexts; the modal should still close.
-  }
-}
-
 function showMobileIntro() {
   if (!mobileIntroModal) {
+    return;
+  }
+  if (!mobileIntroModal.hidden) {
     return;
   }
   mobileIntroModal.hidden = false;
@@ -813,7 +798,7 @@ function maybeShowMobileIntro(params) {
   if (!mobileIntroModal || params.get("result")) {
     return;
   }
-  if (!isCompactMobileViewport() || hasSeenMobileIntro()) {
+  if (!isCompactMobileViewport()) {
     return;
   }
   showMobileIntro();
@@ -824,7 +809,6 @@ function handleMobileIntroKeydown(event) {
     return;
   }
   if (event.key === "Escape") {
-    markMobileIntroSeen();
     hideMobileIntro();
     return;
   }
