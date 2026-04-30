@@ -687,8 +687,10 @@ dd {
   }
 
   .chat-log {
+    height: min(30vh, 320px);
     height: clamp(180px, 30svh, 320px);
     min-height: 0;
+    max-height: min(30vh, 320px);
     max-height: clamp(180px, 30svh, 320px);
     overflow-y: auto;
     -webkit-overflow-scrolling: touch;
@@ -770,8 +772,10 @@ dd {
 
   .chat-log {
     order: 2;
+    height: min(24vh, 300px);
     height: clamp(160px, 24svh, 300px);
     min-height: 0;
+    max-height: min(24vh, 300px);
     max-height: clamp(160px, 24svh, 300px);
     overflow-y: auto;
     overscroll-behavior: contain;
@@ -949,8 +953,10 @@ dd {
   }
 
   .chat-log {
+    height: min(20vh, 190px);
     height: clamp(118px, 20svh, 190px);
     min-height: 0;
+    max-height: min(20vh, 190px);
     max-height: clamp(118px, 20svh, 190px);
   }
 

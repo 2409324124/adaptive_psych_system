@@ -68,6 +68,7 @@ const assistantLayer = document.querySelector("#assistantLayer");
 const assistantBubble = document.querySelector("#assistantBubble");
 const assistantImage = document.querySelector("#assistantImage");
 const compactMobileQuery = window.matchMedia("(max-width: 1220px) and (orientation: portrait)");
+const narrowMobileQuery = window.matchMedia("(max-width: 860px)");
 const smallMobileQuery = window.matchMedia("(max-width: 640px)");
 const mobileIntroStorageKey = "catPsychMobileIntroSeen";
 const maxMobileChatBubbles = 10;
@@ -136,14 +137,21 @@ hashLookupInput.addEventListener("keydown", (event) => {
   }
 });
 mobileIntroStartBtn?.addEventListener("click", () => {
+  if (mobileIntroStartBtn.disabled) {
+    return;
+  }
+  mobileIntroStartBtn.disabled = true;
   markMobileIntroSeen();
   hideMobileIntro();
-  startSession();
+  startSession().finally(() => {
+    mobileIntroStartBtn.disabled = false;
+  });
 });
 mobileIntroDismissBtn?.addEventListener("click", () => {
   markMobileIntroSeen();
   hideMobileIntro();
 });
+document.addEventListener("keydown", handleMobileIntroKeydown);
 paramModeInput.addEventListener("change", renderSetupSummary);
 modelInput.addEventListener("change", renderSetupSummary);
 maxItemsInput.addEventListener("input", renderSetupSummary);
@@ -752,7 +760,7 @@ function appendBubble(role, text) {
 }
 
 function isCompactMobileViewport() {
-  return compactMobileQuery.matches || smallMobileQuery.matches;
+  return compactMobileQuery.matches || narrowMobileQuery.matches || smallMobileQuery.matches;
 }
 
 function trimMobileChatLog() {
@@ -790,6 +798,7 @@ function showMobileIntro() {
   }
   mobileIntroModal.hidden = false;
   document.body.classList.add("mobile-intro-open");
+  window.setTimeout(() => mobileIntroStartBtn?.focus(), 50);
 }
 
 function hideMobileIntro() {
@@ -808,6 +817,33 @@ function maybeShowMobileIntro(params) {
     return;
   }
   showMobileIntro();
+}
+
+function handleMobileIntroKeydown(event) {
+  if (mobileIntroModal.hidden) {
+    return;
+  }
+  if (event.key === "Escape") {
+    markMobileIntroSeen();
+    hideMobileIntro();
+    return;
+  }
+  if (event.key !== "Tab") {
+    return;
+  }
+  const focusable = [mobileIntroStartBtn, mobileIntroDismissBtn].filter((item) => item && !item.disabled);
+  if (!focusable.length) {
+    return;
+  }
+  const first = focusable[0];
+  const last = focusable[focusable.length - 1];
+  if (event.shiftKey && document.activeElement === first) {
+    event.preventDefault();
+    last.focus();
+  } else if (!event.shiftKey && document.activeElement === last) {
+    event.preventDefault();
+    first.focus();
+  }
 }
 
 function setAssistantState(state, options = {}) {
@@ -913,6 +949,7 @@ async function boot() {
 }
 
 smallMobileQuery.addEventListener("change", syncAssistantVisibility);
+narrowMobileQuery.addEventListener("change", syncAssistantVisibility);
 compactMobileQuery.addEventListener("change", syncAssistantVisibility);
 
 boot();
