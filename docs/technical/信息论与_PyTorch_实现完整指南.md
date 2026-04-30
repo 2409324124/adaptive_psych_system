@@ -14,6 +14,7 @@
 4. [第四部分：PyTorch 实现](#第四部分pytorch-实现)
 5. [第五部分：Ridge 正则化敏感性分析](#第五部分ridge-正则化敏感性分析)
 6. [第六部分：系统整合与最佳实践](#第六部分系统整合与最佳实践)
+7. [第七部分：FAQ、参考资料与符号表](#第七部分faq参考资料与符号表)
 
 ---
 
@@ -37,7 +38,7 @@ $$H(X) = -\sum_{i=1}^{n} P(x_i) \log_2 P(x_i)$$
 
 ### 1.1.2 Fisher 信息（Fisher Information）
 
-Fisher 信息是衡量**参数估计精度的度量**。对于给定的模型参数 $\theta$，Fisher ��息定义为：
+Fisher 信息是衡量**参数估计精度的度量**。对于给定的模型参数 $\theta$，Fisher 信息定义为：
 
 $$I(\theta) = E\left[\left(\frac{\partial \log p(X|\theta)}{\partial \theta}\right)^2\right]$$
 
@@ -52,12 +53,20 @@ $$\text{Var}(\hat{\theta}) \geq \frac{1}{I(\theta)}$$
 
 ### 1.1.3 标准误差（Standard Error）与 Fisher 信息的倒数关系
 
-$$\text{SE}(\theta) = \sqrt{\text{Var}(\theta)} = \sqrt{I^{-1}(\theta)}$$
+$$\text{SE}(\hat{\theta}) = \sqrt{\text{Var}(\hat{\theta})} \approx \sqrt{\frac{1}{I(\theta)}}$$
 
 在多维情况下：
 $$\text{SE}_d = \sqrt{[\mathbf{I}^{-1}]_{dd}}$$
 
 其中 $[\mathbf{I}^{-1}]_{dd}$ 是协方差矩阵的第 $d$ 个对角元素。
+
+### 1.1.4 Kullback-Leibler 散度（KL Divergence）
+
+KL 散度衡量两个概率分布之间的信息差异。对于离散分布 $P$ 与 $Q$，定义为：
+
+$$D_{\mathrm{KL}}(P \parallel Q) = \sum_i P(x_i) \log \frac{P(x_i)}{Q(x_i)}$$
+
+在自适应测评中，它可用于理解“新题目回答前后，能力分布发生了多大变化”。本文当前实现主要使用 Fisher 信息矩阵做选题与不确定性估计，KL 散度作为理论背景保留。
 
 ---
 
@@ -89,29 +98,29 @@ $$\text{SE}_d = \sqrt{[\mathbf{I}^{-1}]_{dd}}$$
 
 Two-Parameter Logistic (2PL) 模型定义答题者通过题目的概率为：
 
-$$P(\text{correct} | \theta, a, b) = \frac{1}{1 + e^{-a(\theta - b)}} = \sigma(a\theta - b)$$
+$$P_i(X=1 \mid \boldsymbol{\theta}, \mathbf{a}_i, b_i) = \frac{1}{1 + e^{-(\mathbf{a}_i^\top \boldsymbol{\theta} - b_i)}} = \sigma(\mathbf{a}_i^\top \boldsymbol{\theta} - b_i)$$
 
 **参数含义**：
-- $\theta \in [-4, 4]$：答题者的隐变量能力（5 维 OCEAN 各一个）
-- $a > 0$：**辨别度参数**，衡量题目对不同能力答题者的区分能力
-- $b \in \mathbb{R}$：**难度参数**，题目通过的"50% 概率点"
+- $\boldsymbol{\theta} \in [-4, 4]^5$：答题者的隐变量能力向量（5 维 OCEAN）
+- $\mathbf{a}_i \in \mathbb{R}^5$：**辨别度向量**，衡量题目对不同能力维度的区分能力
+- $b_i \in \mathbb{R}$：**截距/阈值参数**；当 $\mathbf{a}_i^\top \boldsymbol{\theta}=b_i$ 时，答对概率为 50%
 
 ### 2.1.2 Fisher 信息（Binary 2PL）
 
-对于单题目的 Fisher 信息矩阵：
+对于单题目的 Fisher 信息标量得分（等价于信息矩阵的迹）：
 
-$$I_i(\theta) = P_i(\theta) \cdot (1 - P_i(\theta)) \cdot a_i^T a_i$$
+$$I_i(\boldsymbol{\theta}) = P_i(\boldsymbol{\theta})\bigl(1 - P_i(\boldsymbol{\theta})\bigr) \, \|\mathbf{a}_i\|_2^2$$
 
 **关键洞察**：
 - 当 $P(\theta) = 0.5$ 时，$I(\theta)$ 最大（信息最多）
-- 信息最大值与辨别度 $a_i^2$ 成正比
+- 信息最大值与辨别度平方 $\|\mathbf{a}_i\|_2^2$ 成正比
 - 答对概率极端（接近 0 或 1）时，信息很少
 
 **多维情况**（MIRT）：
 
-$$\mathbf{I}_i(\theta) = P_i(\theta) \cdot (1 - P_i(\theta)) \cdot \mathbf{a}_i \mathbf{a}_i^T$$
+$$\mathbf{I}_i(\boldsymbol{\theta}) = P_i(\boldsymbol{\theta})\bigl(1 - P_i(\boldsymbol{\theta})\bigr) \, \mathbf{a}_i \mathbf{a}_i^\top$$
 
-其中 $\mathbf{a}_i \in \mathbb{R}^5$，$\mathbf{a}_i \mathbf{a}_i^T$ 是 $5 \times 5$ 的**外积矩阵**。
+其中 $\mathbf{a}_i \in \mathbb{R}^5$，$\mathbf{a}_i \mathbf{a}_i^\top$ 是 $5 \times 5$ 的**外积矩阵**。
 
 ### 2.1.3 实现细节
 
@@ -156,36 +165,37 @@ Binary 2PL 处理方式：
 
 GRM 对多类别有序反应进行建模。对于 5 个反应类别（1,2,3,4,5），定义累积概率：
 
-$$P^*(X \geq j | \theta) = \sigma(a(\theta - b_j))$$
+$$S_{ij}(\boldsymbol{\theta}) = P_i(Y \geq j+1 \mid \boldsymbol{\theta}) = \sigma(\mathbf{a}_i^\top \boldsymbol{\theta} - b_{ij}), \quad j=1,\ldots,K-1$$
 
-其中 $b_1 < b_2 < b_3 < b_4$（递增的阈值）。
+其中 $K=5$，$b_{i1} < b_{i2} < b_{i3} < b_{i4}$（递增的阈值）。
 
 单个类别的概率：
 
-$$P(X = j | \theta) = P^*(X \geq j) - P^*(X \geq j+1)$$
+$$P_i(Y=j \mid \boldsymbol{\theta}) = S_{i,j-1}(\boldsymbol{\theta}) - S_{ij}(\boldsymbol{\theta}), \quad S_{i0}=1,\; S_{iK}=0$$
 
 **展开式**：
 
-$$\begin{align}
-P(Y=1|\theta) &= 1 - P^*(X \geq 2) = 1 - \sigma(a(\theta - b_1))\\
-P(Y=2|\theta) &= \sigma(a(\theta - b_1)) - \sigma(a(\theta - b_2))\\
-&\vdots\\
-P(Y=5|\theta) &= \sigma(a(\theta - b_4))
-\end{align}$$
+$$\begin{aligned}
+P_i(Y=1\mid\boldsymbol{\theta}) &= 1 - S_{i1}(\boldsymbol{\theta}) \\
+P_i(Y=2\mid\boldsymbol{\theta}) &= S_{i1}(\boldsymbol{\theta}) - S_{i2}(\boldsymbol{\theta}) \\
+P_i(Y=3\mid\boldsymbol{\theta}) &= S_{i2}(\boldsymbol{\theta}) - S_{i3}(\boldsymbol{\theta}) \\
+P_i(Y=4\mid\boldsymbol{\theta}) &= S_{i3}(\boldsymbol{\theta}) - S_{i4}(\boldsymbol{\theta}) \\
+P_i(Y=5\mid\boldsymbol{\theta}) &= S_{i4}(\boldsymbol{\theta})
+\end{aligned}$$
 
 ### 2.2.2 Fisher 信息（GRM）
 
-GRM 的 Fisher 信息基于**反应类别的方差**：
+严格的 GRM Fisher 信息不是反应类别方差本身，而是类别概率对能力参数导数的加权平方和：
 
-$$I_i(\theta) = \text{Var}_Y(Y | \theta) \cdot a_i^T a_i$$
+$$\mathbf{I}_i(\boldsymbol{\theta}) = \sum_{j=1}^{K} \frac{1}{P_i(Y=j \mid \boldsymbol{\theta})} \, \nabla_{\boldsymbol{\theta}} P_i(Y=j \mid \boldsymbol{\theta}) \, \nabla_{\boldsymbol{\theta}} P_i(Y=j \mid \boldsymbol{\theta})^\top$$
 
-其中：
+其中实现中使用的方差型分数应称为近似/启发式信息得分：
 
-$$\text{Var}(Y | \theta) = \sum_{j=1}^{5} P(Y=j) \cdot (j - E[Y])^2$$
+$$S_i(\boldsymbol{\theta}) = \text{Var}(Y_i \mid \boldsymbol{\theta}) \, \|\mathbf{a}_i\|_2^2, \quad \text{Var}(Y_i \mid \boldsymbol{\theta}) = \sum_{j=1}^{K} P_i(Y=j \mid \boldsymbol{\theta})\bigl(j - E[Y_i]\bigr)^2$$
 
 **关键区别**：
 - Binary 2PL：$I(\theta) \propto P(1-P)$（对称，在 P=0.5 最大）
-- GRM：$I(\theta) \propto \text{Var}(Y)$（形状取决于类别分布）
+- GRM：严格 Fisher 信息取决于 $\partial P(Y=j\mid\theta)/\partial\theta$；若使用方差型实现，则是启发式选题分数
 
 ### 2.2.3 实现细节
 
@@ -202,7 +212,8 @@ def grm_fisher_information(theta: torch.Tensor, a: torch.Tensor, thresholds: tor
     # 计算方差 Var(Y)
     variance = torch.sum(probabilities * (scores - expected.unsqueeze(-1)) ** 2, dim=-1)
     
-    # Fisher 信息 = Var(Y) × ∑a_d^2
+    # 方差型启发式信息得分 = Var(Y) × ∑a_d^2
+    # 严格 GRM Fisher 信息应使用类别概率梯度的加权平方和
     discrimination_power = torch.sum(a * a, dim=-1)
     return variance * discrimination_power
 ```
@@ -215,41 +226,45 @@ def grm_fisher_information(theta: torch.Tensor, a: torch.Tensor, thresholds: tor
 初始 θ = [0, 0, 0, 0, 0]
 
 题目辨别度 a = [0.8, 0.1, 0.1, 0.1, 0.1]
-难度参数 b = 0.0
+截距/阈值参数 b = 0.0
 
 ─────────────────────────────────────────────────────
 
 Binary 2PL：
   P(答对 | θ=0, a, b=0) = σ(0.8×0 - 0) = 0.5
   
-  Fisher Info = 0.5 × (1-0.5) × ∑a² 
-              = 0.25 × 0.68 
-              = 0.17
+  Fisher 信息得分 = 0.5 × (1-0.5) × ∑a² 
+                  = 0.25 × 0.68 
+                  = 0.17
               
 ─────────────────────────────────────────────────────
 
-GRM：
-  P(Y=1) = 1 - σ(0.8×0 - (-1.2)) = 1 - σ(1.2) ≈ 0.23
-  P(Y=2) = σ(1.2) - σ(0.8) ≈ 0.19
-  P(Y=3) = σ(0.8) - σ(-0.4) ≈ 0.20
-  P(Y=4) = σ(-0.4) - σ(-1.2) ≈ 0.19
-  P(Y=5) = σ(-1.2) ≈ 0.23
+GRM（示例阈值 b=[-1.2,-0.4,0.4,1.2]）：
+  S1 = σ(0 - (-1.2)) = σ(1.2)  ≈ 0.7685
+  S2 = σ(0 - (-0.4)) = σ(0.4)  ≈ 0.5987
+  S3 = σ(0 - 0.4)    = σ(-0.4) ≈ 0.4013
+  S4 = σ(0 - 1.2)    = σ(-1.2) ≈ 0.2315
+
+  P(Y=1) = 1 - S1       ≈ 0.2315
+  P(Y=2) = S1 - S2      ≈ 0.1698
+  P(Y=3) = S2 - S3      ≈ 0.1974
+  P(Y=4) = S3 - S4      ≈ 0.1698
+  P(Y=5) = S4           ≈ 0.2315
   
-  E[Y] = 1×0.23 + 2×0.19 + 3×0.20 + 4×0.19 + 5×0.23 = 3.0
+  E[Y] ≈ 3.0
   
   Var(Y) = Σ P(Y=j) × (j-3)² 
-         = 0.23×4 + 0.19×1 + 0.20×0 + 0.19×1 + 0.23×4
-         = 0.92 + 0.19 + 0 + 0.19 + 0.92
-         = 2.22
+         ≈ 0.2315×4 + 0.1698×1 + 0.1974×0 + 0.1698×1 + 0.2315×4
+         ≈ 2.19
   
-  Fisher Info = 2.22 × 0.68 = 1.51
+  方差型信息得分 = 2.19 × 0.68 ≈ 1.49
   
 ─────────────────────────────────────────────────────
 
-效能比（GRM/Binary）：
-  1.51 / 0.17 = 8.9 倍 ✓
+方差型得分比（GRM/Binary）：
+  1.49 / 0.17 ≈ 8.8 倍 ✓
   
-更高的信息密度 → 用更少题目达到相同精度
+更高的方差型信息密度 → 用更少题目达到相同精度
 ```
 
 ### 2.2.5 模型选择矩阵
@@ -289,7 +304,7 @@ $$\mathbf{I}(\boldsymbol{\theta}) = \sum_{i=1}^{n} \mathbf{I}_i(\boldsymbol{\the
 
 对于 Binary 2PL：
 
-$$\mathbf{I}_i(\boldsymbol{\theta}) = P_i(\boldsymbol{\theta}) \cdot (1 - P_i(\boldsymbol{\theta})) \cdot \mathbf{a}_i \mathbf{a}_i^T$$
+$$\mathbf{I}_i(\boldsymbol{\theta}) = P_i(\boldsymbol{\theta})\bigl(1 - P_i(\boldsymbol{\theta})\bigr) \, \mathbf{a}_i \mathbf{a}_i^\top$$
 
 **维度**：$5 \times 5$ 矩阵（对应 OCEAN 五个维度）
 
@@ -297,7 +312,7 @@ $$\mathbf{I}_i(\boldsymbol{\theta}) = P_i(\boldsymbol{\theta}) \cdot (1 - P_i(\b
 
 协方差矩阵是 Fisher 信息矩阵的逆：
 
-$$\mathbf{C}(\boldsymbol{\theta}) = [\mathbf{I}(\boldsymbol{\theta})]^{-1}$$
+$$\mathbf{C}(\boldsymbol{\theta}) \approx \left[\mathbf{I}_{\text{total}}(\boldsymbol{\theta}) + \lambda \mathbf{I}_d\right]^+$$
 
 标准误差向量：
 
@@ -490,7 +505,7 @@ def mirt_2pl_probability(theta: torch.Tensor, a: torch.Tensor, b: torch.Tensor) 
     Args:
         theta: shape (d,)，能力向量，d=5(OCEAN维度)
         a: shape (n_items, d)，辨别度矩阵
-        b: shape (n_items,)，难度向量
+        b: shape (n_items,)，截距/阈值向量
     
     Returns:
         probabilities: shape (n_items,)
@@ -629,7 +644,7 @@ def binary_theta_update(
 | 步骤 | 操作 | 数学意义 |
 |------|------|--------|
 | 1 | 转换反应 | $y \in \{0, 0.5, 1\}$ |
-| 2 | 计算 $P(\theta\|a,b)$ | 预测概率 |
+| 2 | 计算 $P(X=1 \mid \boldsymbol{\theta},\mathbf{a},b)$ | 预测概率 |
 | 3 | 残差 $y - \hat{y}$ | 预测错误 |
 | 4 | 梯度 $(y - \hat{y}) \times a$ | 沿辨别度方向更新 |
 | 5 | 步长 $\eta \times \text{梯度}$ | 控制学习速率（0.35） |
@@ -731,9 +746,9 @@ Information 矩阵：
 
 ### 5.1.2 Ridge 正则化
 
-加入 $\lambda I$ 项：
+加入 $\lambda \mathbf{I}_d$ 项：
 
-$$\mathbf{I}_{\text{reg}} = \mathbf{I} + \lambda \mathbf{I} = (\mathbf{I} + \lambda)\mathbf{I}$$
+$$\mathbf{I}_{\text{reg}} = \mathbf{I}_{\text{info}} + \lambda \mathbf{I}_d$$
 
 ```
 修正后的矩阵：
@@ -869,7 +884,7 @@ def bias_analysis():
 ```
 ┌─────────────────────────────────────────┐
 │ Ridge 值选择矩阵                        │
-├────���────────────────────────────────────┤
+├────────────────────────────────────────┤
 │ 场景 | 推荐λ | 原因                     │
 ├─────────────────────────────────────────┤
 │ 早期 | 1e-3  | 秩低，需要稳定性        │
@@ -1077,7 +1092,7 @@ stop_stability_score = 0.7:
 
 ---
 
-## 6.3 测试���验证
+## 6.3 测试与验证
 
 ### 6.3.1 单元测试清单
 
@@ -1306,948 +1321,105 @@ LEARNING_RATE_GRM = 0.08
 
 ---
 
-**文档审核**：v1.0 完成  
-**最后更新**：2026-04-30  
-**维护者**：CAT-Psych 技术团队
-````
+# 第七部分：FAQ、参考资料与符号表
 
----
+## 7.1 常见问题（FAQ）
 
-现在让我保存这个文档到你的项目中：我来直接为你写一份完整的技术文档：
+### Q1：为什么中立反应（3）在 Binary 2PL 中被跳过？
 
-```markdown
-# Fisher Information Theory & PyTorch Implementation
-## 自适应心理测评系统的信息论基础
+Binary 2PL 将反应压缩为二分目标：低分侧为 0，高分侧为 1。中立反应无法稳定表示倾向，若强行映射为 0.5，会给梯度更新引入额外噪声。当前实现通过 `neutral_policy="skip"` 跳过中立反应；如需完整利用 1-5 分 Likert 信息，应优先使用 GRM。
 
-**作者**: AI Technical Documentation  
-**日期**: 2026-04-30  
-**版本**: 1.0  
-**适用范围**: 少题量(5~30题)自适应CAT系统
+### Q2：Ridge = 1e-3 是固定值吗？
 
----
+生产默认建议固定为 `1e-3`。在 5-30 题少题量场景中，过小的 Ridge 难以处理秩亏，过大的 Ridge 会系统性高估标准误。除非题库规模、维度数或停止准则发生明显变化，否则不建议动态调参。
 
-## 目录
+### Q3：为什么 GRM 的学习率比 Binary 2PL 低？
 
-1. [信息论基础](#1-信息论基础)
-2. [Fisher信息矩阵](#2-fisher信息矩阵)
-3. [Binary 2PL vs GRM对比](#3-binary-2pl-vs-grm对比)
-4. [多维协方差与选题](#4-多维协方差与选题)
-5. [Ridge正则化](#5-ridge正则化)
-6. [PyTorch实现](#6-pytorch实现)
-7. [实验验证](#7-实验验证)
-8. [参数调优指南](#8-参数调优指南)
+GRM 通过多个阈值刻画 5 个有序类别，梯度形态比二分类更新更复杂。当前实现使用 `grm_learning_rate=0.08`，比 Binary 2PL 的 `0.35` 更保守，以减少少题量早期的震荡。
 
----
+### Q4：如何判断系统是否达到停止条件？
 
-## 1. 信息论基础
+优先看 `progress()` 或会话状态中的不确定性与覆盖字段：`mean_standard_error` 是否低于目标、维度覆盖是否达标、稳定性指标是否达标，以及停止原因是否不是 `max_items_cap`。
 
-### 1.1 信息熵 (Entropy)
+### Q5：多维协方差的非对角元何时最大？
 
-信息熵衡量随机变量的不确定性程度。对于离散随机变量 $X$ 及其概率分布 $P$，熵定义为：
+通常在答题早期、信息矩阵秩较低时更明显。非对角元表示维度间的不确定性联动；当每个维度都获得足够直接信息后，协方差矩阵会更接近对角主导。
 
-$$H(X) = -\sum_{i=1}^{n} P(x_i) \log P(x_i)$$
+## 7.2 调优流程
 
-**物理含义**：
-- $H = 0$ 时：完全确定，无不确定性
-- $H = \log n$ 时：最大不确定（均匀分布）
+1. 先固定 `scoring_model`：快速验证用 `binary_2pl`，正式少题量 Likert 测评优先用 `grm`。
+2. 保持 `ridge=1e-3`，只在维度数、题量范围或题库参数分布显著变化时重新做敏感性分析。
+3. 先调停止条件，再调学习率；学习率只影响能力更新稳定性，不应被用来掩盖题库参数质量问题。
+4. 用模拟会话检查 `mean_standard_error`、维度覆盖、结果稳定性和最大题量触顶比例。
 
-**在CAT中的应用**：
-- 初始状态（$\theta$ 未知）：$H$ 最大
-- 答题越多：$H$ 递减
-- 当 $H$ 足够小时：停止测试
+## 7.3 公式校验记录
 
-### 1.2 Fisher信息 (Fisher Information)
+Binary 2PL 的 logit 为 $z_i = \mathbf{a}_i^\top\boldsymbol{\theta} - b_i$，$P_i=\sigma(z_i)$。由 $\partial P_i / \partial \boldsymbol{\theta}=P_i(1-P_i)\mathbf{a}_i$ 可得：
 
-Fisher信息衡量样本对未知参数的信息量。对于参数 $\theta$，Fisher信息定义为：
+$$
+\nabla_{\boldsymbol{\theta}} \log P_i(X=x)
+= (x-P_i)\mathbf{a}_i
+$$
 
-$$I(\theta) = E\left[\left(\frac{\partial \log L(X; \theta)}{\partial \theta}\right)^2\right]$$
+因此单题 Fisher 信息矩阵为：
 
-其中 $L(X; \theta)$ 是对数似然函数。
+$$
+\mathbf{I}_i(\boldsymbol{\theta})
+= \mathbb{E}\left[(X-P_i)^2\right]\mathbf{a}_i\mathbf{a}_i^\top
+= P_i(1-P_i)\mathbf{a}_i\mathbf{a}_i^\top
+$$
 
-**关键性质**：
-1. **信息越大，估计越精确**
-   $$\text{Var}(\hat{\theta}) \geq \frac{1}{I(\theta)} \quad \text{(Cramér-Rao下界)}$$
+其标量选题分数等于矩阵迹：
 
-2. **信息是可加的**
-   $$I_{\text{total}}(\theta) = \sum_{i=1}^{n} I_i(\theta)$$
+$$
+\operatorname{tr}\left(\mathbf{I}_i(\boldsymbol{\theta})\right)
+= P_i(1-P_i)\lVert\mathbf{a}_i\rVert_2^2
+$$
 
-3. **逆信息即协方差**
-   $$\text{Cov}(\hat{\theta}) \approx I^{-1}(\theta)$$
+GRM 部分已统一为：严格 Fisher 信息使用类别概率梯度的加权平方和；当前代码中的 `variance * discrimination_power` 是方差型启发式信息得分，不再与严格 Fisher 信息混称。
 
-### 1.3 Kullback-Leibler散度
-
-用于衡量两个概率分布的差异程度：
-
-$$D_{KL}(P \parallel Q) = \sum_{i} P(x_i) \log \frac{P(x_i)}{Q(x_i)}$$
-
-**在IRT中的应用**：衡量当前能力估计与真实能力的差异
-
----
-
-## 2. Fisher信息矩阵
-
-### 2.1 多维Fisher信息矩阵
-
-在多维能力结构（如OCEAN五因素）中，Fisher信息矩阵是一个 $d \times d$ 的对称半正定矩阵：
-
-$$\mathbf{I}(\boldsymbol{\theta}) = \begin{bmatrix}
-I_{11} & I_{12} & \cdots & I_{1d} \\
-I_{12} & I_{22} & \cdots & I_{2d} \\
-\vdots & \vdots & \ddots & \vdots \\
-I_{1d} & I_{2d} & \cdots & I_{dd}
-\end{bmatrix}$$
-
-其中：
-- **对角元** $I_{dd}$：维度 $d$ 的边际Fisher信息
-- **非对角元** $I_{dj}$ (j≠d)：维度间的相关信息
-
-### 2.2 二分类2PL模型的Fisher信息
-
-对于二分类题目，采用Two-Parameter Logistic (2PL)模型：
-
-$$P(X=1|\theta, a, b) = \frac{1}{1 + e^{-a(\theta - b)}} = \sigma(a(\theta - b))$$
-
-其中：
-- $\theta$：被试能力
-- $a$：题目辨别度（discrimination）
-- $b$：题目难度（difficulty）
-
-**单题Fisher信息向量**（多维）：
-
-$$\mathbf{I}_i(\boldsymbol{\theta}) = P_i(1-P_i) \mathbf{a}_i \mathbf{a}_i^T$$
-
-其中 $\mathbf{a}_i$ 是第 $i$ 题的多维辨别度向量。
-
-**展开公式**：
-
-$$I_i(\theta) = P_i(\theta) \cdot (1-P_i(\theta)) \cdot \sum_{d=1}^{D} a_{id}^2$$
-
-**代码实现**：
-```python
-def binary_fisher_information(theta: torch.Tensor, a: torch.Tensor, b: torch.Tensor) -> torch.Tensor:
-    """
-    计算Binary 2PL模型下每题的Fisher信息得分
-    
-    Args:
-        theta: shape (D,) - 能力向量
-        a: shape (n_items, D) - 所有题目的多维辨别度
-        b: shape (n_items,) - 所有题目的难度
-    
-    Returns:
-        shape (n_items,) - 每题的Fisher信息得分
-    """
-    probabilities = mirt_2pl_probability(theta, a, b)  # (n_items,)
-    discrimination_power = torch.sum(a * a, dim=-1)     # (n_items,)
-    return probabilities * (1.0 - probabilities) * discrimination_power
-```
-
-### 2.3 二分类2PL模型的Fisher信息矩阵
-
-单题的Fisher信息矩阵（$D \times D$）为：
-
-$$\mathbf{I}_i(\theta) = P_i(1-P_i) \cdot \mathbf{a}_i \mathbf{a}_i^T$$
-
-这是一个**秩-1矩阵**，反映该题如何约束能力向量的不确定性。
-
-**代码实现**：
-```python
-def binary_fisher_information_matrix(
-    theta: torch.Tensor,
-    item_a: torch.Tensor,
-    item_b: torch.Tensor,
-) -> torch.Tensor:
-    """
-    计算单题的Fisher信息矩阵（D×D）
-    
-    Args:
-        theta: shape (D,)
-        item_a: shape (D,) - 单题的多维辨别度
-        item_b: scalar - 单题的难度
-    
-    Returns:
-        shape (D, D) - 对称半正定矩阵
-    """
-    probability = mirt_2pl_probability(theta, item_a.unsqueeze(0), item_b.unsqueeze(0))[0]
-    return probability * (1.0 - probability) * torch.outer(item_a, item_a)
-```
-
-### 2.4 累积Fisher信息矩阵
-
-答题后，信息矩阵累积：
-
-$$\mathbf{I}_{\text{total}}(\boldsymbol{\theta}) = \sum_{i=1}^{n} \mathbf{I}_i(\boldsymbol{\theta})$$
-
-这个矩阵的秩会随着答题数量增加而增加，直至满秩或收敛。
-
----
-
-## 3. Binary 2PL vs GRM对比
-
-### 3.1 GRM多分类模型
-
-Graded Response Model (GRM) 用于多分类（如5分Likert）题目。
-
-**类别概率**（使用累积概率）：
-
-$$P(Y=j|\theta) = P^*_j - P^*_{j+1}$$
-
-其中 $P^*_j$ 是累积概率：
-
-$$P^*_j(\theta) = \frac{1}{1 + e^{-a(\theta - b_j)}}$$
-
-阈值序列：$b_1 < b_2 < b_3 < b_4$（对于5分量表）
-
-### 3.2 GRM的Fisher信息
-
-GRM的Fisher信息不再是简单的 $P(1-P)$，而是反应类别的方差：
-
-$$I_i(\theta) = \text{Var}(Y) \cdot \sum_{d=1}^{D} a_{id}^2$$
-
-其中方差为：
-
-$$\text{Var}(Y) = \sum_{j=1}^{J} P(Y=j|\theta) \cdot (j - E[Y])^2$$
-
-**代码实现**：
-```python
-def grm_fisher_information(theta: torch.Tensor, a: torch.Tensor, thresholds: torch.Tensor) -> torch.Tensor:
-    """
-    计算GRM模型下每题的Fisher信息得分
-    
-    Args:
-        theta: shape (D,) - 能力向量
-        a: shape (n_items, D) - 多维辨别度
-        thresholds: shape (n_items, n_categories-1) - 阈值矩阵
-    
-    Returns:
-        shape (n_items,) - 每题的Fisher信息得分
-    """
-    probabilities = grm_category_probabilities(theta, a, thresholds)  # (n_items, 5)
-    scores = torch.arange(1, probabilities.shape[-1] + 1, device=a.device, dtype=a.dtype)
-    expected = torch.sum(probabilities * scores, dim=-1)  # (n_items,)
-    variance = torch.sum(probabilities * (scores - expected.unsqueeze(-1)) ** 2, dim=-1)
-    discrimination_power = torch.sum(a * a, dim=-1)
-    return variance * discrimination_power
-```
-
-### 3.3 信息量对比
-
-| 指标 | Binary 2PL | GRM |
-|------|-----------|-----|
-| **Fisher信息基础** | $P(1-P)$ | $\text{Var}(Y)$ |
-| **信息量大小** | ~0.16（在P=0.5时） | ~0.18-0.20（典型） |
-| **中立反应处理** | 跳过（neutral_policy="skip"） | ✓ 提取信息 |
-| **计算复杂度** | O(D) - 1个sigmoid | O(J×D) - J个sigmoid |
-| **适用场景** | 快速MVP（5-10题） | 精确测量（20-30题） |
-| **学习率** | 0.35 | 0.08 |
-
-**经验数据**：
-```
-在相同初始条件下（θ=0，a=[0.8,0.1,...]）：
-Binary Fisher Info: 0.16
-GRM Fisher Info:    0.18
-信息量提升:        +12.5%
-
-中立反应影响:
-Binary:  3题有效（1,2,4,5）→ 答题数/有效信息比 = 1.67
-GRM:     5题都有效          → 答题数/有效信息比 = 1.00 ✓
-```
-
----
-
-## 4. 多维协方差与选题
-
-### 4.1 协方差矩阵导出
-
-根据Cramér-Rao下界，协方差矩阵是Fisher信息矩阵的逆：
-
-$$\mathbf{C}(\boldsymbol{\theta}) = \mathbf{I}^{-1}(\boldsymbol{\theta}) \approx \begin{bmatrix}
-\sigma^2_1 & \rho_{12}\sigma_1\sigma_2 & \cdots \\
-\rho_{12}\sigma_1\sigma_2 & \sigma^2_2 & \cdots \\
-\vdots & \vdots & \ddots
-\end{bmatrix}$$
-
-其中：
-- **对角元** $\sigma^2_d$：维度 $d$ 的方差（也是标准误SE）
-- **非对角元** $\rho_{dj}$：维度间的相关系数
-
-### 4.2 标准误的计算
-
-标准误（Standard Error）是协方差对角线的平方根：
-
-$$\text{SE}_d = \sqrt{\text{Var}(\theta_d)} = \sqrt{[\mathbf{C}]_{dd}}$$
-
-平均标准误用作停止准则：
-
-$$\text{Mean SE} = \frac{1}{D} \sum_{d=1}^{D} \text{SE}_d$$
-
-**代码实现**：
-```python
-def standard_errors(self, *, ridge: float = 1e-3) -> dict[str, float]:
-    """计算每个维度的标准误"""
-    covariance = self.covariance_matrix(ridge=ridge).detach().cpu()
-    diagonal = torch.diagonal(covariance).clamp_min(0.0)
-    return {
-        dimension: float(torch.sqrt(diagonal[index]))
-        for index, dimension in enumerate(self.dimensions)
-    }
-
-def uncertainty_summary(self, *, ridge: float = 1e-3) -> dict[str, float | bool]:
-    """计算整体不确定性摘要"""
-    covariance = self.covariance_matrix(ridge=ridge).detach().cpu()
-    diagonal = torch.diagonal(covariance).clamp_min(0.0)
-    std_errors = torch.sqrt(diagonal)
-    mean_se = float(std_errors.mean())
-    max_se = float(std_errors.max())
-    return {
-        "mean_standard_error": mean_se,
-        "max_standard_error": max_se,
-        "confidence_ready": bool(mean_se <= 0.85 and self.answered_count >= len(self.dimensions)),
-    }
-```
-
-### 4.3 协方差对选题的影响
-
-**关键观察**：非对角元反映了维度间的信息"重叠"。
-
-**早期阶段（5题，都在Extraversion上）**：
-```
-I_total ≈ [[2.5, 0.3],   ← E和A高度相关
-           [0.3, 0.1]]
-           
-C = I_inv ≈ [[0.8, 0.5],   ← SE(E)=0.9, SE(A)=1.4
-             [0.5, 2.0]]     非对角元显著
-             
-选题策略：优先问Agreeableness（高SE）和未覆盖维度
-```
-
-**中期阶段（15题，均匀分布）**：
-```
-I_total ≈ [[3.0, 0.2],   ← 非对角元衰减
-           [0.2, 3.0]]
-           
-C ≈ [[0.65, 0.01],   ← SE各维度趋于一致
-     [0.01, 0.65]]
-     
-选题策略：纯粹最大Fisher信息
-```
-
-### 4.4 Coverage-aware选题算法
-
-为了在少题情况下平衡，采用覆盖度约束：
-
-$$\text{select} \, i^* = \arg\max_i I_i(\theta) \quad \text{s.t.} \quad \forall d: n_d \geq \text{coverage\_min}$$
-
-**代码实现**：
-```python
-def _coverage_aware_index(self, scores: torch.Tensor) -> int:
-    """
-    覆盖度感知的选题：
-    1. 如果某维度未满足覆盖度要求，优先在该维度内选题
-    2. 否则，全局选择最大Fisher信息的题
-    """
-    if self.coverage_min_per_dimension <= 0:
-        return int(torch.argmax(scores).item())
-    
-    counts = self.dimension_answer_counts()
-    undercovered = {
-        dimension for dimension, count in counts.items()
-        if count < self.coverage_min_per_dimension
-    }
-    
-    if not undercovered:
-        return int(torch.argmax(scores).item())
-    
-    # 在未覆盖维度内，选择最大Fisher信息
-    masked_scores = scores.clone()
-    for item in self.items:
-        if item.dimension not in undercovered:
-            masked_scores[item.index] = -torch.inf
-    
-    return int(torch.argmax(masked_scores).item())
-```
-
----
-
-## 5. Ridge正则化
-
-### 5.1 为什么需要Ridge
-
-在少题情况下（5-10题），Fisher信息矩阵通常是**秩亏的**（rank < D）。直接求逆会导致数值不稳定或无穷大。
-
-**数值稳定性问题**：
-```
-I (秩亏) → 条件数→∞ → inv失败或产生inf/nan
-```
-
-Ridge正则化通过添加小的对角扰动来稳定矩阵求逆：
-
-$$\mathbf{I}_{\text{reg}} = \mathbf{I}(\boldsymbol{\theta}) + \lambda \mathbf{I}_d$$
-
-其中 $\lambda$ 是正则化参数（ridge系数），$\mathbf{I}_d$ 是单位矩阵。
-
-### 5.2 Ridge的效果
-
-| λ值 | 条件数 | SE稳定性 | SE准确性 | 推荐性 |
-|-----|--------|---------|---------|--------|
-| 1e-4 | ~800 | ⚠️ 低秩时不稳定 | ✓ 准确 | ❌ 风险 |
-| **1e-3** | ~70 | ✓ 良好 | ✓ 准确 | ✓✓ **最优** |
-| 1e-2 | ~8 | ✓✓ 非常稳定 | ⚠️ 高估3-5% | ✓ 保守可用 |
-| 1e-1 | ~1 | ✓✓✓ 过度稳定 | ❌ 高估10倍 | ❌ 无效 |
-
-### 5.3 协方差矩阵计算
-
-```python
-def covariance_matrix(self, *, ridge: float = 1e-3) -> torch.Tensor:
-    """
-    计算协方差矩阵 C = I_reg^(-1)
-    
-    Args:
-        ridge: float, 正则化参数 λ
-    
-    Returns:
-        torch.Tensor, shape (D, D) - 协方差矩阵
-    """
-    identity = torch.eye(len(self.dimensions), device=self.device, dtype=self.a.dtype)
-    regularized = self.information_matrix + ridge * identity
-    return torch.linalg.pinv(regularized)  # 使用伪逆处理秩亏
-```
-
-**为什么用伪逆（pinv）而不是求逆（inv）**：
-- `inv`：在秩亏时失败
-- `pinv`：总是稳定的，秩亏时返回最小范数解
-
-### 5.4 Ridge敏感��分析
-
-**建议**：对于5~30题的CAT系统，**固定λ=1e-3** 是最佳平衡。
-
-```python
-# 固定值的合理性验证
-def validate_ridge_choice():
-    """验证λ=1e-3在不同答题数下的表现"""
-    router = AdaptiveMMPIRouter(device="cpu")
-    
-    ridge_tests = {
-        "5题后": [],
-        "15题后": [],
-        "30题后": [],
-    }
-    
-    # ... 答题逻辑 ...
-    
-    # 结果表明：λ=1e-3 在所有阶段SE偏差 < 1%
-```
-
----
-
-## 6. PyTorch实现
-
-### 6.1 核心数据结构
-
-```python
-class AdaptiveMMPIRouter:
-    """
-    MIRT自适应路由引擎
-    
-    维护的关键张量：
-    - theta: (D,) - ��前能力向量
-    - information_matrix: (D, D) - 累积Fisher信息
-    - answered_indices: set - 已答题目的索引集
-    - history: list - 答题历史记录
-    """
-    
-    def __init__(
-        self,
-        item_path: str | Path | None = None,
-        param_path: str | Path | None = None,
-        scoring_model: ScoringModel = "binary_2pl",
-        device: str | torch.device | None = None,
-        coverage_min_per_dimension: int = 2,
-    ):
-        # 初始化参数
-        self.items, self.dimensions, self.response_scale = self._load_items()
-        self.a, self.b, self.param_metadata = self._load_params()
-        
-        # 初始化能力和信息矩阵
-        self.theta = torch.zeros(len(self.dimensions), device=self.device)
-        self.information_matrix = torch.zeros(
-            (len(self.dimensions), len(self.dimensions)),
-            device=self.device,
-        )
-```
-
-### 6.2 关键算法实现
-
-#### 6.2.1 概率计算
-
-```python
-def mirt_2pl_probability(theta: torch.Tensor, a: torch.Tensor, b: torch.Tensor) -> torch.Tensor:
-    """
-    MIRT 2PL概率模型
-    
-    P(X=1|θ,a,b) = σ(a·θ - b)
-    
-    Args:
-        theta: (D,) - 能力向量
-        a: (n_items, D) 或 (1, D) - 辨别度
-        b: (n_items,) 或 (1,) - 难度
-    
-    Returns:
-        (n_items,) - 概率向量
-    """
-    logits = a @ theta - b
-    return torch.sigmoid(logits)
-```
-
-#### 6.2.2 Fisher信息计算
-
-```python
-def binary_fisher_information(theta: torch.Tensor, a: torch.Tensor, b: torch.Tensor) -> torch.Tensor:
-    """
-    Binary 2PL Fisher信息
-    
-    I_i = P_i(1-P_i) * Σ(a_d^2)
-    """
-    probabilities = mirt_2pl_probability(theta, a, b)
-    discrimination_power = torch.sum(a * a, dim=-1)
-    return probabilities * (1.0 - probabilities) * discrimination_power
-```
-
-#### 6.2.3 Theta更新（梯度下降）
-
-```python
-def binary_theta_update(
-    theta: torch.Tensor,
-    item_a: torch.Tensor,
-    item_b: torch.Tensor,
-    response: int | float,
-    *,
-    learning_rate: float = 0.35,
-    response_weight: float = 1.0,
-) -> torch.Tensor:
-    """
-    Binary 2PL能力更新
-    
-    θ_new = θ_old + α·w·(target - P)·a
-    
-    其中target是二分化的反应：
-    - 1,2 → 0.0 (不同意)
-    - 4,5 → 1.0 (同意)
-    - 3 → None (跳过，neutral_policy="skip")
-    """
-    target = response_to_target(response, source="likert")
-    if target is None:
-        return theta.clone()  # 中立反应不更新
-    
-    probability = mirt_2pl_probability(theta, item_a.unsqueeze(0), item_b.unsqueeze(0))[0]
-    gradient = (torch.as_tensor(target, device=theta.device, dtype=theta.dtype) - probability) * item_a
-    updated = theta + (learning_rate * response_weight) * gradient
-    return torch.clamp(updated, min=-4.0, max=4.0)
-```
-
-#### 6.2.4 Theta更新（GRM - 自动微分）
-
-```python
-def grm_theta_update(
-    theta: torch.Tensor,
-    item_a: torch.Tensor,
-    item_thresholds: torch.Tensor,
-    response: int,
-    *,
-    learning_rate: float = 0.08,
-) -> torch.Tensor:
-    """
-    GRM能力更新（使用autograd）
-    
-    θ_new = θ_old + α·∇_θ log P(Y=response|θ)
-    """
-    working_theta = theta.detach().clone().requires_grad_(True)
-    
-    probabilities = grm_category_probabilities(
-        working_theta,
-        item_a.unsqueeze(0),
-        item_thresholds.unsqueeze(0),
-    )[0]
-    
-    log_likelihood = torch.log(probabilities[response - 1])
-    log_likelihood.backward()
-    
-    gradient = working_theta.grad
-    if gradient is None:
-        return theta.clone()
-    
-    updated = theta + learning_rate * gradient.detach()
-    return torch.clamp(updated, min=-4.0, max=4.0)
-```
-
-### 6.3 选题流程
-
-```python
-def select_next_item(self) -> dict[str, object] | None:
-    """
-    选择下一题的完整流程
-    
-    1. 如果还有剩余题目
-    2. 计算所有未答题的Fisher信息得分
-    3. 应用覆盖度约束
-    4. 返回最高Fisher信息的题目
-    """
-    if self.remaining_count <= 0:
-        return None
-    
-    # 步骤2：计算Fisher信息
-    scores = self.information_scores()  # (n_items,)
-    
-    # 步骤3：应用覆盖度约束
-    index = self._coverage_aware_index(scores)
-    
-    # 步骤4：组装返回数据
-    item = self.items[index].to_dict()
-    item["response_scale"] = self.response_scale
-    item["scoring_model"] = self.scoring_model
-    return item
-
-def answer_item(self, item_id: str, response: int) -> dict[str, object]:
-    """
-    答题处理流程
-    
-    1. 找到题目在参数中的索引
-    2. 验证题目未被答过
-    3. 保存当前theta
-    4. 计算单题Fisher信息矩阵
-    5. 更新theta（根据模型类型）
-    6. 累积Fisher信息矩阵
-    7. 记录到历史
-    """
-    index = self._index_for_item_id(item_id)
-    if index in self.answered_indices:
-        raise ValueError(f"Item already answered: {item_id}")
-    
-    previous_theta = self.theta.clone()
-    item_information = self.fisher_information_matrix(item_id)
-    keyed_response = self._keyed_response(index, response, source="likert")
-    
-    # 根据模型类型更新theta
-    if self.scoring_model == "binary_2pl":
-        self.theta = binary_theta_update(
-            self.theta,
-            self.a[index],
-            self.b[index],
-            keyed_response,
-            learning_rate=self.binary_learning_rate,
-        )
-    else:  # GRM
-        self.theta = grm_theta_update(
-            self.theta,
-            self.a[index],
-            self.thresholds[index],
-            int(keyed_response),
-            learning_rate=self.grm_learning_rate,
-        )
-    
-    # 累积Fisher信息
-    self.answered_indices.add(index)
-    self.information_matrix = self.information_matrix + item_information
-    
-    # 记录历史
-    record = {
-        "item_id": item_id,
-        "response": response,
-        "keyed_response": keyed_response,
-        "theta_before": previous_theta.detach().cpu().tolist(),
-        "theta_after": self.theta.detach().cpu().tolist(),
-        "information_trace_after": float(torch.trace(self.information_matrix).detach().cpu()),
-    }
-    self.history.append(record)
-    return record
-```
-
----
-
-## 7. 实验验证
-
-### 7.1 Binary 2PL vs GRM信息量对比
-
-```python
-def compare_fisher_information():
-    """验证Binary vs GRM的信息量差异"""
-    
-    router_2pl = AdaptiveMMPIRouter(scoring_model="binary_2pl", device="cpu")
-    router_grm = AdaptiveMMPIRouter(scoring_model="grm", device="cpu")
-    
-    results = {"2pl": [], "grm": []}
-    
-    for _ in range(10):
-        # 同样的选题序列
-        item_2pl = router_2pl.select_next_item()
-        item_grm = router_grm.select_next_item()
-        assert item_2pl["id"] == item_grm["id"]
-        
-        # 都选择同样的��应
-        router_2pl.answer_item(item_2pl["id"], 4)
-        router_grm.answer_item(item_grm["id"], 4)
-        
-        # 记录Fisher信息的迹
-        trace_2pl = float(torch.trace(router_2pl.information_matrix))
-        trace_grm = float(torch.trace(router_grm.information_matrix))
-        
-        results["2pl"].append(trace_2pl)
-        results["grm"].append(trace_grm)
-        
-        print(f"Q{_+1}: 2PL_trace={trace_2pl:.3f}, GRM_trace={trace_grm:.3f}, "
-              f"ratio={trace_grm/trace_2pl:.3f}")
-    
-    # 预期：GRM的trace增长更快（更多信息）
-    # 平均比例：1.10-1.25（10-25%的信息提升）
-```
-
-**预期结果**：
-```
-Q1: 2PL_trace=0.130, GRM_trace=0.145, ratio=1.115
-Q2: 2PL_trace=0.250, GRM_trace=0.285, ratio=1.140
-Q3: 2PL_trace=0.360, GRM_trace=0.425, ratio=1.180
-...
-平均提升: 12-15%
-```
-
-### 7.2 协方差矩阵演化
-
-```python
-def trace_covariance_evolution():
-    """追踪协方差矩阵的演化"""
-    
-    router = AdaptiveMMPIRouter(scoring_model="binary_2pl", device="cpu")
-    
-    for answered in range(1, 31):
-        item = router.select_next_item()
-        router.answer_item(item["id"], [4, 5][answered % 2])  # 交替答4和5
-        
-        # 计算协方差矩阵的迹（所有维度方差之和）
-        cov = router.covariance_matrix(ridge=1e-3)
-        se_dict = router.standard_errors(ridge=1e-3)
-        mean_se = np.mean(list(se_dict.values()))
-        
-        if answered in [1, 5, 10, 15, 20, 25, 30]:
-            print(f"Q{answered:2d}: mean_SE={mean_se:.3f}, cov_trace={float(torch.trace(cov)):.2f}")
-```
-
-**预期曲线**：
-```
-Q 1: mean_SE=0.985, cov_trace=4.88   ← 初期SE很高
-Q 5: mean_SE=0.735, cov_trace=2.65
-Q10: mean_SE=0.632, cov_trace=1.95
-Q15: mean_SE=0.580, cov_trace=1.68   ← 进入精化阶段
-Q20: mean_SE=0.520, cov_trace=1.35
-Q25: mean_SE=0.475, cov_trace=1.15
-Q30: mean_SE=0.420, cov_trace=0.88   ← 渐近收敛
-```
-
-### 7.3 Ridge敏感度实验
-
-```python
-def ridge_sensitivity_experiment():
-    """测试不同Ridge值下的SE稳定性"""
-    
-    router = AdaptiveMMPIRouter(device="cpu")
-    
-    # 早期答题（5题）
-    for _ in range(5):
-        item = router.select_next_item()
-        router.answer_item(item["id"], 4)
-    
-    ridge_values = [1e-4, 1e-3, 1e-2, 1e-1]
-    ses_by_ridge = {}
-    
-    for ridge in ridge_values:
-        ses = list(router.standard_errors(ridge=ridge).values())
-        mean_se = np.mean(ses)
-        ses_by_ridge[ridge] = mean_se
-        print(f"ridge={ridge:1.0e}: mean_SE={mean_se:.4f}")
-    
-    # 计算偏差（相对于lambda=1e-3）
-    base_se = ses_by_ridge[1e-3]
-    for ridge in ridge_values:
-        deviation = (ses_by_ridge[ridge] - base_se) / base_se * 100
-        print(f"ridge={ridge:1.0e}: deviation={deviation:+.2f}%")
-```
-
-**预期结果**：
-```
-ridge=1e-04: mean_SE=0.9542
-ridge=1e-03: mean_SE=0.9568
-ridge=1e-02: mean_SE=0.9804
-ridge=1e-01: mean_SE=1.1233
-
-Deviations:
-ridge=1e-04: deviation=-0.27%
-ridge=1e-03: deviation= 0.00% (基准)
-ridge=1e-02: deviation=+2.46%
-ridge=1e-01: deviation=+17.40%
-```
-
----
-
-## 8. 参数调优指南
-
-### 8.1 参数表
-
-| 参数 | 推荐值 | 范围 | 说明 |
-|------|--------|------|------|
-| `scoring_model` | `"binary_2pl"` | {"binary_2pl", "grm"} | 2PL快速, GRM精确 |
-| `coverage_min_per_dimension` | 2 | [0, 5] | 少题时用2-3，充足时用1 |
-| `max_items` | 30 | [5, 50] | MVP用5-10, 正式用20-30 |
-| `min_items` | 5 | [2, 15] | 最少收集基础数据 |
-| `stop_mean_standard_error` | 0.65 | [0.5, 1.0] | 精化目标 |
-| `SCREENING_STOP_MSE` | 0.85 | [0.7, 1.0] | 筛选目标 |
-| `binary_learning_rate` | 0.35 | [0.2, 0.5] | Binary 2PL步长 |
-| `grm_learning_rate` | 0.08 | [0.05, 0.15] | GRM步长（更保守） |
-| `ridge` | 1e-3 | [1e-4, 1e-2] | **不要改** |
-
-### 8.2 场景选择
-
-**场景A：快速原型（MVP）**
-```python
-router = AdaptiveMMPIRouter(
-    scoring_model="binary_2pl",
-    max_items=10,
-    coverage_min_per_dimension=2,
-    learning_rate=0.35,  # 快速收敛
-)
-# → 5~10题完成，快速反馈
-```
-
-**场景B：标准测评（生产）**
-```python
-router = AdaptiveMMPIRouter(
-    scoring_model="binary_2pl",
-    max_items=25,
-    coverage_min_per_dimension=2,
-    learning_rate=0.35,
-)
-# → 15~25题完成，精度与效率平衡
-```
-
-**场景C：精确测量（研究）**
-```python
-router = AdaptiveMMPIRouter(
-    scoring_model="grm",  # 充分利用5分量表
-    max_items=30,
-    coverage_min_per_dimension=2,
-    learning_rate=0.08,   # 更稳健的更新
-)
-# → 20~30题完成，最高精度
-```
-
-### 8.3 调优流程
-
-```
-1. 确定场景 (MVP/Production/Research)
-   ↓
-2. 选择 scoring_model (2PL/GRM)
-   ↓
-3. 设置 max_items (5-10 / 20-25 / 25-30)
-   ↓
-4. 固定其他参数（使用表中推荐值）
-   ↓
-5. 运行基准测试 (benchmark_stopping_rules.py)
-   ↓
-6. 观察以下指标：
-   - 平均答题数
-   - 平均SE是否达到目标
-   - 覆盖度分布
-   - 稳定性分数
-   ↓
-7. 微调 coverage_min 或 stop_mean_standard_error
-   ↓
-8. **不要改** ridge, learning_rate (已优化)
-```
-
----
-
-## 9. 常见问题 (FAQ)
-
-### Q1: 为什么中立反应(3)在Binary中被跳过？
-
-**答**：Binary模型假设二分反应（答对/答错）。中立反应(3)无法确定倾向，且对theta更新贡献不确定（梯度接近0）。通过跳过(neutral_policy="skip")，避免引入噪声。
-
-如需处理中立，考虑GRM。
-
-### Q2: Ridge=1e-3是固定的，不能调吗？
-
-**答**：不建议调。这个值是经过优化的，对5~30题的范围有效。
-
-- 过小（1e-4）：秩低时数值不稳定
-- 过大（1e-2）：SE被系统性高估
-
-### Q3: 为什么GRM的学习率比Binary低？
-
-**答**：GRM通过5个阈值建模，参数空间更复杂。低学习率(0.08 vs 0.35)确保更稳健的收敛。
-
-### Q4: 如何判断系统是否达到了停止条件？
-
-**答**：查看 `progress()` 的以下字段：
-- `mean_standard_error` ≤ target
-- `coverage_ready` = True
-- `stability_ready` = True
-- `stopped_by` 不是 "max_items_cap"
-
-### Q5: 多维协方差的非对角元何时最大？
-
-**答**：在秩低时（早期答题）最大。非对角元反映维度间的"信息借用"。当秩接近D时，非对角元衰减。
-
----
-
-## 10. 参考文献与延伸阅读
+## 7.4 参考文献与延伸阅读
 
 ### 理论基础
-1. Fisher, R. A. (1922). "On the Mathematical Foundations of Theoretical Statistics"
-2. Kullback, S., & Leibler, R. A. (1951). "On Information and Sufficiency"
-3. Rasch, G. (1960). "Probabilistic Models for Some Intelligence and Attainment Tests"
+1. Fisher, R. A. (1922). "On the Mathematical Foundations of Theoretical Statistics".
+2. Kullback, S., & Leibler, R. A. (1951). "On Information and Sufficiency".
+3. Rasch, G. (1960). "Probabilistic Models for Some Intelligence and Attainment Tests".
 
-### IRT与CAT
-4. Weiss, D. J., & Kingsbury, G. G. (1984). "Application of Computerized Adaptive Testing to Educational Problems"
-5. Embretson, S. E., & Reise, S. P. (2000). "Item Response Theory for Psychologists"
-6. van der Linden, W. J., & Glas, C. A. (2000). "Computerized Adaptive Testing: Theory and Practice"
-
-### 多维IRT
-7. Reckase, M. D. (2009). "Multidimensional Item Response Theory"
-8. Bolt, D. M., Cohen, A. S., & Wollack, J. A. (2002). "Item Parameter Estimation Under Conditions of Test Speededness: Application of a Marginal Maximum Likelihood Procedure with Empirical Priors"
+### IRT 与 CAT
+1. Weiss, D. J., & Kingsbury, G. G. (1984). "Application of Computerized Adaptive Testing to Educational Problems".
+2. Embretson, S. E., & Reise, S. P. (2000). "Item Response Theory for Psychologists".
+3. van der Linden, W. J., & Glas, C. A. (2000). "Computerized Adaptive Testing: Theory and Practice".
+4. Reckase, M. D. (2009). "Multidimensional Item Response Theory".
 
 ### 代码与实践
-- PyTorch官方文档：https://pytorch.org/docs/stable/linalg.html
-- 本项目代码：`engine/math_utils.py`, `engine/irt_model.py`, `services/assessment_session.py`
+- PyTorch 官方文档：https://pytorch.org/docs/stable/linalg.html
+- 本项目代码：`engine/math_utils.py`、`engine/irt_model.py`、`services/assessment_session.py`
 
----
-
-## 11. 附录：完整数学符号表
+## 7.5 数学符号表
 
 | 符号 | 含义 | 维度 |
 |------|------|------|
-| $\theta$ | 被试能力向量 | (D,) |
-| $a$ | 题目多维辨别度 | (n_items, D) |
-| $b$ | 题目难度 | (n_items,) |
-| $P(\cdot)$ | 概率 | scalar |
-| $\mathbf{I}$ | Fisher信息矩阵 | (D, D) |
-| $\mathbf{C}$ | 协方差矩阵 | (D, D) |
-| $\text{SE}$ | 标准误 | (D,) |
-| $\lambda$ | Ridge正则化参数 | scalar |
+| $\boldsymbol{\theta}$ | 被试能力向量 | $(D,)$ |
+| $\mathbf{a}_i$ | 第 $i$ 题的多维辨别度向量 | $(D,)$ |
+| $b_i$ | 第 $i$ 题的截距/阈值参数 | scalar |
+| $P_i$ | 第 $i$ 题的二分类反应概率 | scalar |
+| $\mathbf{I}$ | Fisher 信息矩阵 | $(D,D)$ |
+| $\mathbf{C}$ | 协方差矩阵 | $(D,D)$ |
+| $\text{SE}$ | 标准误 | $(D,)$ |
+| $\lambda$ | Ridge 正则化参数 | scalar |
 | $\alpha$ | 学习率 | scalar |
-| $D$ | 能力维度数 | 5 (OCEAN) |
-| $n$ | 题目总数 | 50 (current) |
+| $D$ | 能力维度数 | 当前为 5（OCEAN） |
+| $K$ | GRM 反应类别数 | 当前为 5 |
 
----
-
-## 12. 版本历史
+## 7.6 版本历史
 
 | 版本 | 日期 | 变更 |
 |------|------|------|
-| 1.0 | 2026-04-30 | 初版文档，完整覆盖理论与实现 |
+| 1.1 | 2026-05-01 | 合并重复内容，修正 2PL/GRM/Ridge 公式口径，迁移到 `docs/technical/` |
+| 1.0 | 2026-04-30 | 初版文档，覆盖 Fisher 信息、MIRT、Ridge 与 PyTorch 实现 |
 
 ---
 
+**最后更新**：2026-05-01  
+**维护者**：CAT-Psych 技术团队
 
-**最后更新**: 2026-04-30  
-**许可证**: CC BY-SA 4.0
-
-```
-
-现在我为你生成为项目创建这个文档的指令：
