@@ -2,7 +2,7 @@ services:
   proxy:
     image: ipip-numpy-runtime:20260625-home
     container_name: shinonome-reverse-proxy
-    command: ["uvicorn", "proxy:app", "--app-dir", "/proxy", "--host", "0.0.0.0", "--port", "8080"]
+    command: ["python", "/proxy/reverse_proxy.py"]
     ports:
       - "80:8080"
     volumes:
@@ -19,8 +19,8 @@ services:
     env_file:
       - .env
     environment:
-      CAT_PSYCH_SESSION_BACKEND: sqlite
-      CAT_PSYCH_SESSION_DB_PATH: /app/data/sessions.sqlite3
+      CAT_PSYCH_SESSION_BACKEND: json
+      CAT_PSYCH_SESSION_DIR: /app/data/sessions
       CAT_PSYCH_SESSION_TTL_SECONDS: "7200"
     volumes:
       - ./data:/app/data
