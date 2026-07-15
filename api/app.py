@@ -259,6 +259,11 @@ def get_result_payload(session_id: str, db: Session) -> dict[str, object]:
 
 
 @app.get("/")
+def home() -> FileResponse:
+    return FileResponse(WEB_DIR / "home.html", headers={"Cache-Control": "no-cache"})
+
+
+@app.get("/cat-psych")
 def index() -> FileResponse:
     return FileResponse(WEB_DIR / "index.html")
 

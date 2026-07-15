@@ -17,6 +17,19 @@ from engine.database import Base, UserSessionRecord
 from services import AssessmentSession, ProgressEstimator, ResultInterpreter, SessionStore
 
 
+def test_personal_home_links_to_portfolio_and_cat_psych_keeps_its_own_route() -> None:
+    client = TestClient(app)
+
+    home = client.get("/")
+    assessment = client.get("/cat-psych")
+
+    assert home.status_code == 200
+    assert "东云 / Shinonome" in home.text
+    assert "https://portfolio.shinonome.xyz" in home.text
+    assert assessment.status_code == 200
+    assert "CAT-Psych" in assessment.text
+
+
 def test_assessment_session_flow() -> None:
     session = AssessmentSession(scoring_model="binary_2pl", max_items=3, min_items=1, stop_mean_standard_error=5.0, device="cpu")
 

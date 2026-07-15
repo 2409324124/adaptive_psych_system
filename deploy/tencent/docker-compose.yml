@@ -1,0 +1,30 @@
+services:
+  proxy:
+    image: ipip-numpy-runtime:20260625-home
+    container_name: shinonome-reverse-proxy
+    command: ["uvicorn", "proxy:app", "--app-dir", "/proxy", "--host", "0.0.0.0", "--port", "8080"]
+    ports:
+      - "80:8080"
+    volumes:
+      - ./proxy:/proxy:ro
+    depends_on:
+      - app
+    healthcheck:
+      disable: true
+    restart: unless-stopped
+
+  app:
+    image: ipip-numpy-runtime:20260625-home
+    container_name: shinonome-app
+    env_file:
+      - .env
+    environment:
+      CAT_PSYCH_SESSION_BACKEND: sqlite
+      CAT_PSYCH_SESSION_DB_PATH: /app/data/sessions.sqlite3
+      CAT_PSYCH_SESSION_TTL_SECONDS: "7200"
+    volumes:
+      - ./data:/app/data
+      - ./site/home.html:/app/web/home.html:ro
+    expose:
+      - "8000"
+    restart: unless-stopped
