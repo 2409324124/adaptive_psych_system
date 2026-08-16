@@ -263,6 +263,16 @@ def home() -> FileResponse:
     return FileResponse(WEB_DIR / "home.html", headers={"Cache-Control": "no-cache"})
 
 
+@app.get("/robots.txt")
+def robots() -> FileResponse:
+    return FileResponse(WEB_DIR / "robots.txt", media_type="text/plain")
+
+
+@app.get("/sitemap.xml")
+def sitemap() -> FileResponse:
+    return FileResponse(WEB_DIR / "sitemap.xml", media_type="application/xml")
+
+
 @app.get("/cat-psych")
 def index() -> FileResponse:
     return FileResponse(WEB_DIR / "index.html")

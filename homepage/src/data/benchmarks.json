@@ -1,0 +1,113 @@
+{
+  "categories": [
+    { "id": "root", "label": "Benchmarks", "parentId": null, "pathSegment": "" },
+    { "id": "hardware", "label": "Hardware", "parentId": "root", "pathSegment": "HARDWARE" },
+    { "id": "hardware-cpu", "label": "CPU", "parentId": "hardware", "pathSegment": "CPU" },
+    { "id": "hardware-memory", "label": "Memory", "parentId": "hardware", "pathSegment": "MEMORY" },
+    { "id": "runtime", "label": "Runtime", "parentId": "root", "pathSegment": "RUNTIME" },
+    { "id": "runtime-inference", "label": "Inference", "parentId": "runtime", "pathSegment": "INFERENCE" },
+    { "id": "runtime-quantization", "label": "Quantization", "parentId": "runtime", "pathSegment": "QUANTIZATION" },
+    { "id": "agent", "label": "Agent", "parentId": "root", "pathSegment": "AGENT" },
+    { "id": "model", "label": "Model", "parentId": "root", "pathSegment": "MODEL" }
+  ],
+  "items": [
+    {
+      "id": "xeon-9470c",
+      "categoryId": "hardware-cpu",
+      "name": "Xeon Max 9470C",
+      "type": "Benchmark Report",
+      "status": "Published",
+      "icon": "computer",
+      "action": { "type": "external", "target": "https://2409324124.github.io/xeon-max-9470c-benchmarks/report/" }
+    },
+    {
+      "id": "hbm-stream",
+      "categoryId": "hardware-memory",
+      "name": "HBM / STREAM",
+      "fileName": "HBM_STREAM.TXT",
+      "type": "Measurement",
+      "status": "Published",
+      "icon": "chart",
+      "action": { "type": "notepad" },
+      "summary": [
+        "Intel Xeon Max 9470C · 64 GB HBM2e",
+        "",
+        "STREAM Copy   658,763.5 MB/s",
+        "STREAM Scale  651,040.3 MB/s",
+        "STREAM Add    606,724.4 MB/s",
+        "STREAM Triad  596,258.8 MB/s",
+        "",
+        "Measured: 2026-05-30"
+      ],
+      "sourceUrl": "https://github.com/2409324124/xeon-max-9470c-benchmarks/blob/main/data/benchmarks.json"
+    },
+    {
+      "id": "onednn-amx",
+      "categoryId": "hardware-cpu",
+      "name": "oneDNN AMX Kernels",
+      "fileName": "ONEDNN_AMX.TXT",
+      "type": "Measurement",
+      "status": "Published",
+      "icon": "chip",
+      "action": { "type": "notepad" },
+      "summary": [
+        "Intel Xeon Max 9470C · 52C / 104T",
+        "",
+        "oneDNN BF16 convolution  44,155 GFLOPS",
+        "oneDNN INT8 convolution 105,713 GFLOPS",
+        "",
+        "Precision note: BF16 / INT8 kernel measurements."
+      ],
+      "sourceUrl": "https://github.com/2409324124/xeon-max-9470c-benchmarks/blob/main/data/benchmarks.json"
+    },
+    {
+      "id": "qwen3-int4",
+      "categoryId": "runtime-inference",
+      "name": "OpenVINO Qwen3-8B INT4",
+      "fileName": "QWEN3_INT4.TXT",
+      "type": "Measurement",
+      "status": "Measured",
+      "icon": "chip",
+      "action": { "type": "notepad" },
+      "summary": [
+        "OpenVINO/Qwen3-8B-int4-ov",
+        "NNCF INT4_ASYM · group 128 · CPU",
+        "",
+        "40 -> 512  C16  203.40 aggregate tok/s",
+        "1K -> 128   C8    63.52 aggregate tok/s",
+        "4K -> 128   C1    13.54 aggregate tok/s",
+        "4K -> 128   C8    16.53 aggregate tok/s",
+        "",
+        "1,320 measured requests · 0 failures",
+        "0 cgroup swap · 0 OOM / oom_kill",
+        "WikiText-2 PPL 17.7501 · 296,047 tokens",
+        "C4 PPL         15.8424 · 869,183 tokens"
+      ],
+      "sourceUrl": "https://github.com/2409324124/xeon-max-9470c-benchmarks/blob/main/evidence/qwen3-8b-int4-baseline.json"
+    },
+    {
+      "id": "balanced-int4",
+      "categoryId": "runtime-quantization",
+      "name": "Balanced INT4 Fidelity",
+      "fileName": "BALANCED_INT4.TXT",
+      "type": "Measurement",
+      "status": "Measured",
+      "icon": "document",
+      "action": { "type": "notepad" },
+      "summary": [
+        "Official OpenVINO INT4 / Balanced INT4",
+        "",
+        "WikiText-2 PPL  17.7501 / 17.8255  (+0.4245%)",
+        "C4 PPL          15.8424 / 15.8057  (-0.2319%)",
+        "",
+        "Compared positions                  50,000",
+        "Top-1 agreement                     88.038%",
+        "Reference top-1 in candidate top-5  99.47%",
+        "Invalid values                      0",
+        "",
+        "Weight bytes  4,855,348,053 / 6,748,344,786"
+      ],
+      "sourceUrl": "https://github.com/2409324124/xeon-max-9470c-benchmarks/blob/main/evidence/balanced-int4-fidelity.json"
+    }
+  ]
+}

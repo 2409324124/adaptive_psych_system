@@ -1,80 +1,77 @@
 <!doctype html>
 <html lang="zh-CN">
   <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <meta name="theme-color" content="#090d14" />
-    <meta name="description" content="东云 / Shinonome：Agent、深度学习与心理学。" />
-    <title>东云 / Shinonome</title>
-    <style>
-      :root { color-scheme: dark; --bg:#090d14; --ink:#f1f5fa; --muted:#9ca8b8; --line:rgba(231,239,248,.15); --accent:#73a8ff; --mono:"SFMono-Regular",Consolas,"Liberation Mono",monospace; --sans:Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif; }
-      * { box-sizing:border-box; }
-      html { overflow-x:hidden; background:var(--bg); scroll-behavior:smooth; }
-      body { min-height:100vh; margin:0; overflow-x:hidden; color:var(--ink); background:radial-gradient(circle at 80% 18%,rgba(66,119,198,.22),transparent 34rem),linear-gradient(145deg,#070b11,#0b111c 58%,#080d14); font-family:var(--sans); line-height:1.65; }
-      a { color:inherit; text-decoration:none; }
-      a:focus-visible { outline:2px solid var(--accent); outline-offset:5px; }
-      .shell { width:min(1220px,calc(100% - 44px)); margin:0 auto; }
-      header { display:flex; align-items:center; justify-content:space-between; min-height:76px; border-bottom:1px solid var(--line); }
-      .brand { display:flex; gap:11px; align-items:baseline; font-weight:800; letter-spacing:.08em; }
-      .brand i { color:var(--accent); font-family:serif; font-size:1.25rem; font-style:normal; }
-      nav { display:flex; gap:clamp(16px,3vw,38px); color:#aab5c5; font-family:var(--mono); font-size:.72rem; text-transform:uppercase; }
-      nav a:hover { color:var(--ink); }
-      .hero { position:relative; display:grid; grid-template-columns:minmax(0,1fr); align-items:end; min-height:calc(100svh - 77px); padding:clamp(70px,12vh,130px) 0 80px; }
-      .hero::after { position:absolute; z-index:-1; top:8%; right:-18%; width:min(52vw,680px); aspect-ratio:1; content:""; border:1px solid var(--line); border-radius:50%; background:repeating-linear-gradient(90deg,transparent 0 31px,rgba(255,255,255,.045) 32px 33px); opacity:.65; }
-      .eyebrow { margin:0 0 20px; color:var(--accent); font-family:var(--mono); font-size:.7rem; letter-spacing:.08em; text-transform:uppercase; }
-      h1 { max-width:860px; margin:0; font-size:clamp(4rem,10vw,9rem); line-height:.88; letter-spacing:-.07em; }
-      .subtitle { max-width:740px; margin:30px 0 0; font-size:clamp(1.5rem,3vw,2.8rem); font-weight:650; line-height:1.16; letter-spacing:-.035em; }
-      .actions { display:flex; flex-wrap:wrap; gap:12px; margin-top:34px; }
-      .action { display:inline-flex; align-items:center; justify-content:space-between; min-height:50px; padding:0 18px; border:1px solid var(--line); font-family:var(--mono); font-size:.75rem; transition:transform 160ms ease,border-color 160ms ease; }
-      .action:hover { transform:translateY(-3px); border-color:var(--accent); }
-      .action.primary { min-width:210px; color:#07101e; border-color:var(--accent); background:var(--accent); font-weight:800; }
-      .launches { padding:52px 0 92px; }
-      .section-head { display:flex; justify-content:space-between; align-items:end; gap:30px; padding:30px 0; border-top:1px solid var(--line); }
-      h2 { margin:0; font-size:clamp(2rem,5vw,4.8rem); letter-spacing:-.055em; line-height:.95; }
-      .section-head p { max-width:390px; margin:0; color:var(--muted); }
-      .launch { display:grid; grid-template-columns:42px minmax(220px,.7fr) minmax(280px,1fr) 90px; gap:22px; align-items:center; min-height:94px; border-top:1px solid var(--line); transition:padding 160ms ease,background 160ms ease; }
-      .launch:last-child { border-bottom:1px solid var(--line); }
-      .launch:hover { padding-inline:14px; background:rgba(115,168,255,.1); }
-      .launch span:first-child,.launch small { color:#6f7d90; font-family:var(--mono); font-size:.68rem; }
-      .launch strong { font-size:1.16rem; }
-      .launch p { margin:0; color:var(--muted); font-size:.9rem; }
-      .launch small { justify-self:end; color:var(--accent); }
-      footer { display:flex; justify-content:space-between; gap:20px; padding:30px 0 40px; border-top:1px solid var(--line); color:#6f7d90; font-family:var(--mono); font-size:.68rem; }
-      @media(max-width:820px){ .shell{width:min(100% - 30px,680px)} nav a:not(:first-child){display:none}.hero{min-height:auto;padding:68px 0}.hero::after{top:2%;right:-55%;width:120vw}.section-head{display:block}.section-head p{margin-top:16px}.launch{grid-template-columns:32px 1fr 48px;padding:22px 0}.launch p{grid-column:2}.launch small{grid-column:3;grid-row:1} }
-      @media(max-width:520px){ header{min-height:66px}.brand span{display:none}h1{font-size:clamp(3rem,15.5vw,4.5rem)}.subtitle{font-size:1.5rem}.hero{padding-top:54px}.actions{display:grid}.action{width:100%}.launches{padding-top:34px}.section-head{padding-top:26px}footer{display:grid} }
-      @media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}.action,.launch{transition:none}}
-    </style>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#008080" />
+
+    <meta name="description" content="Xu Jianzhou (东云 / Shinonome) builds and studies AI agents, machine learning systems, runtime tools, hardware benchmarks, and model evaluation." />
+    <meta name="robots" content="index,follow,max-image-preview:large" />
+    <link rel="canonical" href="https://shinonome.xyz/" />
+    <meta property="og:type" content="profile" />
+    <meta property="og:site_name" content="Shinonome" />
+    <meta property="og:title" content="Xu Jianzhou / 东云 (Shinonome) — AI Agent, Machine Learning &amp; Systems Research" />
+    <meta property="og:description" content="Xu Jianzhou (东云 / Shinonome) builds and studies AI agents, machine learning systems, runtime tools, hardware benchmarks, and model evaluation." />
+    <meta property="og:image" content="https://shinonome.xyz/static/home-assets/og/shinonome-desktop.png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:url" content="https://shinonome.xyz/" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Xu Jianzhou / 东云 (Shinonome) — AI Agent, Machine Learning &amp; Systems Research" />
+    <meta name="twitter:description" content="Xu Jianzhou (东云 / Shinonome) builds and studies AI agents, machine learning systems, runtime tools, hardware benchmarks, and model evaluation." />
+    <meta name="twitter:image" content="https://shinonome.xyz/static/home-assets/og/shinonome-desktop.png" />
+    <title>Xu Jianzhou / 东云 (Shinonome) — AI Agent, Machine Learning &amp; Systems Research</title>
+    <script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"WebSite","@id":"https://shinonome.xyz/#website","url":"https://shinonome.xyz/","name":"Shinonome","alternateName":["东云","Xu Jianzhou"],"inLanguage":["zh-CN","en"]},{"@type":"ProfilePage","@id":"https://shinonome.xyz/#profile-page","url":"https://shinonome.xyz/","name":"Xu Jianzhou / 东云 (Shinonome) — AI Agent, Machine Learning & Systems Research","description":"Xu Jianzhou (东云 / Shinonome) builds and studies AI agents, machine learning systems, runtime tools, hardware benchmarks, and model evaluation.","isPartOf":{"@id":"https://shinonome.xyz/#website"},"mainEntity":{"@id":"https://shinonome.xyz/#person"}},{"@type":"Person","@id":"https://shinonome.xyz/#person","name":"Xu Jianzhou","alternateName":["东云","Shinonome"],"url":"https://shinonome.xyz/","email":"mailto:jzhou2409324124@gmail.com","sameAs":["https://github.com/2409324124","https://portfolio.shinonome.xyz/","https://orcid.org/0009-0008-6625-0148"],"knowsAbout":["AI Agents","Machine Learning","Runtime Systems","Hardware Benchmarking","LLM Evaluation"]}]}</script>
+    <script>document.documentElement.classList.add("js");</script>
+    <link rel="stylesheet" href="/static/home-assets/homepage.css?v=f304edcd612b" />
   </head>
   <body>
-    <header class="shell">
-      <a class="brand" href="/"><i>東雲</i><span>SHINONOME</span></a>
-      <nav aria-label="主导航">
-        <a href="https://portfolio.shinonome.xyz">作品集 ↗</a>
-        <a href="/cat-psych">CAT-Psych</a>
-        <a href="https://preploop.shinonome.xyz">PrepLoop</a>
+    <div id="root"><div class="seo-fallback">
+      <header>
+        <p>Shinonome Personal Research Workstation</p>
+        <nav aria-label="Primary navigation">
+          <a href="https://portfolio.shinonome.xyz/">Projects</a>
+          <a href="https://2409324124.github.io/xeon-max-9470c-benchmarks/report/">Benchmark</a>
+          <a href="#about">About</a>
+          <a href="mailto:jzhou2409324124@gmail.com">Contact</a>
+        </nav>
+      </header>
+      <main>
+        <section id="about" aria-labelledby="seo-home-title">
+          <h1 id="seo-home-title">Xu Jianzhou / 东云 / Shinonome</h1>
+          <p>AI Agent · Machine Learning · Systems Research</p>
+          <p>让想法变成现实，让想象力夺权。</p>
+        </section>
+        <section aria-labelledby="seo-projects-title">
+          <h2 id="seo-projects-title">Projects</h2>
+          <article>
+            <h3><a href="https://shinonome.xyz/cat-psych">CAT-Psych</a></h3>
+            <p>Chinese-first adaptive Big Five personality assessment using MIRT / CAT.</p>
+          </article>
+          <article>
+            <h3><a href="https://2409324124.github.io/programming-visualization/examples/">Programming Visualization</a></h3>
+            <p>Interactive algorithm execution, variable state, and call-stack visualization.</p>
+          </article>
+          <article>
+            <h3><a href="https://preploop.shinonome.xyz/">PrepLoop</a></h3>
+            <p>Daily spaced review for algorithms, agent harnesses, and system design.</p>
+          </article>
+          <article>
+            <h3><a href="https://2409324124.github.io/xeon-max-9470c-benchmarks/report/">Xeon Max 9470C Benchmark</a></h3>
+            <p>CPU inference, HBM, AMX, NUMA, OpenVINO, and low-bit quantization evidence.</p>
+          </article>
+          <article>
+            <h3><a href="https://github.com/2409324124/deepseek-codex-adapter">DeepSeek Codex Adapter</a></h3>
+            <p>OpenAI Responses-compatible adapter for DeepSeek tool-calling workflows.</p>
+          </article>
+        </section>
+      </main>
+      <footer>
         <a href="https://github.com/2409324124">GitHub</a>
-      </nav>
-    </header>
-    <main>
-      <section class="hero shell">
-        <div>
-          <p class="eyebrow">Agent · 深度学习 · 心理学</p>
-          <h1>东云 /<br />Shinonome</h1>
-          <p class="subtitle">让想法变成现实，让想象力夺权。</p>
-          <div class="actions">
-            <a class="action primary" href="https://portfolio.shinonome.xyz"><span>查看完整作品集</span><span>↗</span></a>
-            <a class="action" href="/cat-psych">体验 CAT-Psych →</a>
-            <a class="action" href="https://preploop.shinonome.xyz">打开 PrepLoop →</a>
-          </div>
-        </div>
-      </section>
-      <section class="launches shell" aria-labelledby="launch-title">
-        <div class="section-head"><h2 id="launch-title">现在可以打开</h2><p>三个真实入口。更多公开仓库、指标、架构与实验统一放在作品集。</p></div>
-        <a class="launch" href="https://portfolio.shinonome.xyz"><span>01</span><strong>Work Index</strong><p>15 个 Agent、ML、交互与制造项目。</p><small>Open ↗</small></a>
-        <a class="launch" href="/cat-psych"><span>02</span><strong>CAT-Psych</strong><p>基于 MIRT / CAT 的自适应人格测评原型。</p><small>Live →</small></a>
-        <a class="launch" href="https://preploop.shinonome.xyz"><span>03</span><strong>PrepLoop</strong><p>面向算法面试和 Agent Harness 的间隔复习系统。</p><small>Live ↗</small></a>
-      </section>
-    </main>
-    <footer class="shell"><span>© 2026 东云 / Shinonome</span><a href="mailto:jzhou2409324124@gmail.com">jzhou2409324124@gmail.com ↗</a></footer>
+        <a href="https://orcid.org/0009-0008-6625-0148">ORCID</a>
+        <a href="mailto:jzhou2409324124@gmail.com">Email</a>
+      </footer>
+    </div></div>
+    <script type="module" src="/static/home-assets/homepage.js?v=dfab5c07e3fc"></script>
   </body>
 </html>

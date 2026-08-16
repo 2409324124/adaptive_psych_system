@@ -25,6 +25,9 @@ services:
     volumes:
       - ./data:/app/data
       - ./site/home.html:/app/web/home.html:ro
+      - ./site/home-assets:/app/web/home-assets:ro
+      - ./site/robots.txt:/app/web/robots.txt:ro
+      - ./site/sitemap.xml:/app/web/sitemap.xml:ro
     expose:
       - "8000"
     restart: unless-stopped
