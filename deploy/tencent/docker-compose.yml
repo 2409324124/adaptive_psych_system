@@ -14,7 +14,7 @@ services:
     restart: unless-stopped
 
   app:
-    image: ipip-numpy-runtime:20260625-home
+    image: ipip-numpy-runtime:20260816-ssg-bd20f62
     container_name: shinonome-app
     env_file:
       - .env
