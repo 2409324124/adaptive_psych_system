@@ -191,21 +191,43 @@ function ContactIcon() {
 function BBSIcon() {
   return (
     <>
-      <rect x="4" y="3" width="24" height="20" fill={P.black} />
-      <rect x="3" y="2" width="24" height="20" fill={P.light} />
-      <rect x="5" y="4" width="20" height="16" fill={P.dark} />
-      <rect x="7" y="6" width="16" height="11" fill="#061d2b" />
-      <rect x="9" y="8" width="5" height="1" fill={P.cyan} />
-      <rect x="9" y="11" width="9" height="1" fill={P.cyan} />
-      <rect x="9" y="14" width="3" height="1" fill={P.cyan} />
-      <rect x="14" y="14" width="6" height="1" fill={P.white} />
-      <rect x="13" y="22" width="5" height="3" fill={P.shadow} />
-      <rect x="8" y="25" width="15" height="3" fill={P.black} />
-      <rect x="7" y="24" width="15" height="3" fill={P.face} />
-      <rect x="24" y="6" width="5" height="2" fill={P.cyan} />
-      <rect x="26" y="10" width="4" height="2" fill={P.cyan} />
-      <rect x="27" y="14" width="3" height="2" fill={P.cyan} />
-      <rect x="24" y="18" width="5" height="2" fill={P.cyan} />
+      {/* Rear computer */}
+      <rect x="3" y="3" width="16" height="13" fill={P.black} />
+      <rect x="2" y="2" width="16" height="13" fill={P.white} />
+      <rect x="3" y="3" width="14" height="11" fill={P.face} />
+      <rect x="5" y="4" width="11" height="8" fill={P.dark} />
+      <rect x="6" y="5" width="9" height="6" fill={P.blue} />
+      <rect x="6" y="5" width="9" height="1" fill="#2020b8" />
+      <rect x="4" y="13" width="12" height="1" fill={P.shadow} />
+      <rect x="7" y="15" width="7" height="2" fill={P.shadow} />
+      <rect x="5" y="17" width="11" height="3" fill={P.black} />
+      <rect x="4" y="16" width="11" height="3" fill={P.face} />
+      <rect x="5" y="17" width="9" height="1" fill={P.white} />
+      <rect x="6" y="18" width="2" height="1" fill={P.green} />
+
+      {/* Network cable and connector */}
+      <rect x="2" y="20" width="3" height="4" fill={P.black} />
+      <rect x="1" y="20" width="3" height="3" fill={P.yellow} />
+      <rect x="2" y="19" width="1" height="1" fill="#f4e58b" />
+      <rect x="4" y="21" width="6" height="2" fill={P.yellowDark} />
+      <rect x="5" y="20" width="5" height="1" fill={P.yellow} />
+      <rect x="10" y="20" width="4" height="1" fill={P.black} />
+
+      {/* Foreground computer */}
+      <rect x="13" y="9" width="18" height="14" fill={P.black} />
+      <rect x="12" y="8" width="18" height="14" fill={P.white} />
+      <rect x="13" y="9" width="16" height="12" fill={P.face} />
+      <rect x="15" y="10" width="12" height="9" fill={P.dark} />
+      <rect x="16" y="11" width="10" height="7" fill={P.teal} />
+      <rect x="17" y="12" width="8" height="1" fill="#20b0b0" />
+      <rect x="14" y="20" width="14" height="1" fill={P.shadow} />
+      <rect x="15" y="20" width="2" height="1" fill={P.green} />
+      <rect x="22" y="22" width="5" height="3" fill={P.shadow} />
+      <rect x="14" y="25" width="16" height="4" fill={P.black} />
+      <rect x="13" y="24" width="16" height="4" fill={P.face} />
+      <rect x="14" y="25" width="14" height="1" fill={P.white} />
+      <rect x="15" y="26" width="2" height="1" fill={P.green} />
+      <rect x="19" y="26" width="7" height="1" fill={P.dark} />
     </>
   );
 }

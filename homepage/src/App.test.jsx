@@ -95,14 +95,23 @@ describe("Shinonome desktop", () => {
     const user = userEvent.setup();
     const openSpy = vi.spyOn(window, "open").mockImplementation(() => null);
     render(<App />);
+    const shortcut = screen.getByRole("button", { name: "打开 东云通信局" });
 
-    await user.dblClick(screen.getByRole("button", { name: "打开 东云通信局" }));
+    await user.dblClick(shortcut);
 
     expect(openSpy).toHaveBeenCalledWith(
       "https://bbs.shinonome.xyz/",
       "_blank",
       "noopener,noreferrer",
     );
+
+    fireEvent.keyDown(shortcut, { key: "Enter" });
+    expect(openSpy).toHaveBeenLastCalledWith(
+      "https://bbs.shinonome.xyz/",
+      "_blank",
+      "noopener,noreferrer",
+    );
+
     const welcomeLink = screen.getByRole("link", { name: "连接东云通信局" });
     expect(welcomeLink.getAttribute("href")).toBe("https://bbs.shinonome.xyz/");
     expect(welcomeLink.getAttribute("target")).toBe("_blank");

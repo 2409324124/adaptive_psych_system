@@ -9466,109 +9466,228 @@ function pe() {
 function O() {
 	return /* @__PURE__ */ (0, p.jsxs)(p.Fragment, { children: [
 		/* @__PURE__ */ (0, p.jsx)("rect", {
-			x: "4",
+			x: "3",
 			y: "3",
-			width: "24",
-			height: "20",
+			width: "16",
+			height: "13",
 			fill: T.black
 		}),
 		/* @__PURE__ */ (0, p.jsx)("rect", {
-			x: "3",
+			x: "2",
 			y: "2",
-			width: "24",
-			height: "20",
-			fill: T.light
+			width: "16",
+			height: "13",
+			fill: T.white
+		}),
+		/* @__PURE__ */ (0, p.jsx)("rect", {
+			x: "3",
+			y: "3",
+			width: "14",
+			height: "11",
+			fill: T.face
 		}),
 		/* @__PURE__ */ (0, p.jsx)("rect", {
 			x: "5",
 			y: "4",
-			width: "20",
-			height: "16",
+			width: "11",
+			height: "8",
 			fill: T.dark
 		}),
 		/* @__PURE__ */ (0, p.jsx)("rect", {
-			x: "7",
-			y: "6",
-			width: "16",
-			height: "11",
-			fill: "#061d2b"
+			x: "6",
+			y: "5",
+			width: "9",
+			height: "6",
+			fill: T.blue
 		}),
 		/* @__PURE__ */ (0, p.jsx)("rect", {
-			x: "9",
-			y: "8",
-			width: "5",
-			height: "1",
-			fill: T.cyan
-		}),
-		/* @__PURE__ */ (0, p.jsx)("rect", {
-			x: "9",
-			y: "11",
+			x: "6",
+			y: "5",
 			width: "9",
 			height: "1",
-			fill: T.cyan
+			fill: "#2020b8"
 		}),
 		/* @__PURE__ */ (0, p.jsx)("rect", {
-			x: "9",
-			y: "14",
-			width: "3",
+			x: "4",
+			y: "13",
+			width: "12",
 			height: "1",
-			fill: T.cyan
+			fill: T.shadow
 		}),
 		/* @__PURE__ */ (0, p.jsx)("rect", {
-			x: "14",
-			y: "14",
-			width: "6",
+			x: "7",
+			y: "15",
+			width: "7",
+			height: "2",
+			fill: T.shadow
+		}),
+		/* @__PURE__ */ (0, p.jsx)("rect", {
+			x: "5",
+			y: "17",
+			width: "11",
+			height: "3",
+			fill: T.black
+		}),
+		/* @__PURE__ */ (0, p.jsx)("rect", {
+			x: "4",
+			y: "16",
+			width: "11",
+			height: "3",
+			fill: T.face
+		}),
+		/* @__PURE__ */ (0, p.jsx)("rect", {
+			x: "5",
+			y: "17",
+			width: "9",
 			height: "1",
 			fill: T.white
 		}),
 		/* @__PURE__ */ (0, p.jsx)("rect", {
+			x: "6",
+			y: "18",
+			width: "2",
+			height: "1",
+			fill: T.green
+		}),
+		/* @__PURE__ */ (0, p.jsx)("rect", {
+			x: "2",
+			y: "20",
+			width: "3",
+			height: "4",
+			fill: T.black
+		}),
+		/* @__PURE__ */ (0, p.jsx)("rect", {
+			x: "1",
+			y: "20",
+			width: "3",
+			height: "3",
+			fill: T.yellow
+		}),
+		/* @__PURE__ */ (0, p.jsx)("rect", {
+			x: "2",
+			y: "19",
+			width: "1",
+			height: "1",
+			fill: "#f4e58b"
+		}),
+		/* @__PURE__ */ (0, p.jsx)("rect", {
+			x: "4",
+			y: "21",
+			width: "6",
+			height: "2",
+			fill: T.yellowDark
+		}),
+		/* @__PURE__ */ (0, p.jsx)("rect", {
+			x: "5",
+			y: "20",
+			width: "5",
+			height: "1",
+			fill: T.yellow
+		}),
+		/* @__PURE__ */ (0, p.jsx)("rect", {
+			x: "10",
+			y: "20",
+			width: "4",
+			height: "1",
+			fill: T.black
+		}),
+		/* @__PURE__ */ (0, p.jsx)("rect", {
 			x: "13",
+			y: "9",
+			width: "18",
+			height: "14",
+			fill: T.black
+		}),
+		/* @__PURE__ */ (0, p.jsx)("rect", {
+			x: "12",
+			y: "8",
+			width: "18",
+			height: "14",
+			fill: T.white
+		}),
+		/* @__PURE__ */ (0, p.jsx)("rect", {
+			x: "13",
+			y: "9",
+			width: "16",
+			height: "12",
+			fill: T.face
+		}),
+		/* @__PURE__ */ (0, p.jsx)("rect", {
+			x: "15",
+			y: "10",
+			width: "12",
+			height: "9",
+			fill: T.dark
+		}),
+		/* @__PURE__ */ (0, p.jsx)("rect", {
+			x: "16",
+			y: "11",
+			width: "10",
+			height: "7",
+			fill: T.teal
+		}),
+		/* @__PURE__ */ (0, p.jsx)("rect", {
+			x: "17",
+			y: "12",
+			width: "8",
+			height: "1",
+			fill: "#20b0b0"
+		}),
+		/* @__PURE__ */ (0, p.jsx)("rect", {
+			x: "14",
+			y: "20",
+			width: "14",
+			height: "1",
+			fill: T.shadow
+		}),
+		/* @__PURE__ */ (0, p.jsx)("rect", {
+			x: "15",
+			y: "20",
+			width: "2",
+			height: "1",
+			fill: T.green
+		}),
+		/* @__PURE__ */ (0, p.jsx)("rect", {
+			x: "22",
 			y: "22",
 			width: "5",
 			height: "3",
 			fill: T.shadow
 		}),
 		/* @__PURE__ */ (0, p.jsx)("rect", {
-			x: "8",
+			x: "14",
 			y: "25",
-			width: "15",
-			height: "3",
+			width: "16",
+			height: "4",
 			fill: T.black
 		}),
 		/* @__PURE__ */ (0, p.jsx)("rect", {
-			x: "7",
+			x: "13",
 			y: "24",
-			width: "15",
-			height: "3",
+			width: "16",
+			height: "4",
 			fill: T.face
 		}),
 		/* @__PURE__ */ (0, p.jsx)("rect", {
-			x: "24",
-			y: "6",
-			width: "5",
-			height: "2",
-			fill: T.cyan
+			x: "14",
+			y: "25",
+			width: "14",
+			height: "1",
+			fill: T.white
 		}),
 		/* @__PURE__ */ (0, p.jsx)("rect", {
-			x: "26",
-			y: "10",
-			width: "4",
-			height: "2",
-			fill: T.cyan
+			x: "15",
+			y: "26",
+			width: "2",
+			height: "1",
+			fill: T.green
 		}),
 		/* @__PURE__ */ (0, p.jsx)("rect", {
-			x: "27",
-			y: "14",
-			width: "3",
-			height: "2",
-			fill: T.cyan
-		}),
-		/* @__PURE__ */ (0, p.jsx)("rect", {
-			x: "24",
-			y: "18",
-			width: "5",
-			height: "2",
-			fill: T.cyan
+			x: "19",
+			y: "26",
+			width: "7",
+			height: "1",
+			fill: T.dark
 		})
 	] });
 }
