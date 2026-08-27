@@ -160,9 +160,9 @@ a:focus-visible {
   top: 24px;
   left: 25px;
   display: grid;
-  grid-template-columns: 130px 148px;
-  grid-template-rows: repeat(5, 112px);
-  gap: 12px 62px;
+  grid-template-columns: repeat(3, 138px);
+  grid-template-rows: repeat(4, 112px);
+  gap: 12px 32px;
 }
 
 .desktop-shortcut {
@@ -418,10 +418,33 @@ a:focus-visible {
   line-height: 1.42;
 }
 
-.welcome-copy p:last-child {
+.welcome-copy p:last-of-type {
   margin-top: 28px;
   font-family: var(--ui-font);
   font-size: clamp(17px, 1.5vw, 23px);
+}
+
+.welcome-bbs-link {
+  align-self: flex-start;
+  margin-top: 24px;
+  color: #0000ee;
+  font-family: var(--ui-font);
+  font-size: clamp(15px, 1.25vw, 19px);
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.welcome-bbs-link:visited {
+  color: #551a8b;
+}
+
+.welcome-bbs-link:hover {
+  color: #0000aa;
+}
+
+.welcome-bbs-link:focus-visible {
+  outline: 1px dotted currentColor;
+  outline-offset: 2px;
 }
 
 .system-profiler {
@@ -1724,9 +1747,14 @@ a:focus-visible {
     font-size: 24px;
   }
 
-  .welcome-copy p:last-child {
+  .welcome-copy p:last-of-type {
     margin-top: 24px;
     font-size: 18px;
+  }
+
+  .welcome-bbs-link {
+    margin-top: 20px;
+    font-size: 16px;
   }
 }
 
@@ -1742,8 +1770,8 @@ a:focus-visible {
   .desktop-shortcuts {
     top: 8px;
     left: 3px;
-    grid-template-columns: 82px 88px;
-    grid-template-rows: repeat(5, 70px);
+    grid-template-columns: repeat(3, 84px);
+    grid-template-rows: repeat(4, 70px);
     gap: 2px 8px;
   }
 
@@ -1775,7 +1803,7 @@ a:focus-visible {
   .win-window--benchmark,
   .win-window--system-profiler,
   .win-window--evidence {
-    top: 368px;
+    top: 298px;
     left: 8px;
     width: calc(100vw - 16px);
     min-height: 0;
@@ -1843,9 +1871,14 @@ a:focus-visible {
     font-size: 19px;
   }
 
-  .welcome-copy p:last-child {
+  .welcome-copy p:last-of-type {
     margin-top: 18px;
     font-size: 14px;
+  }
+
+  .welcome-bbs-link {
+    margin-top: 15px;
+    font-size: 13px;
   }
 
   .benchmark-explorer {
@@ -2228,7 +2261,7 @@ a:focus-visible {
 @media (max-height: 700px) and (min-width: 761px) {
   .desktop-shortcuts {
     top: 12px;
-    grid-template-rows: repeat(5, 100px);
+    grid-template-rows: repeat(4, 100px);
     gap-block: 4px;
   }
 

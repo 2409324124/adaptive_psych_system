@@ -188,6 +188,28 @@ function ContactIcon() {
   );
 }
 
+function BBSIcon() {
+  return (
+    <>
+      <rect x="4" y="3" width="24" height="20" fill={P.black} />
+      <rect x="3" y="2" width="24" height="20" fill={P.light} />
+      <rect x="5" y="4" width="20" height="16" fill={P.dark} />
+      <rect x="7" y="6" width="16" height="11" fill="#061d2b" />
+      <rect x="9" y="8" width="5" height="1" fill={P.cyan} />
+      <rect x="9" y="11" width="9" height="1" fill={P.cyan} />
+      <rect x="9" y="14" width="3" height="1" fill={P.cyan} />
+      <rect x="14" y="14" width="6" height="1" fill={P.white} />
+      <rect x="13" y="22" width="5" height="3" fill={P.shadow} />
+      <rect x="8" y="25" width="15" height="3" fill={P.black} />
+      <rect x="7" y="24" width="15" height="3" fill={P.face} />
+      <rect x="24" y="6" width="5" height="2" fill={P.cyan} />
+      <rect x="26" y="10" width="4" height="2" fill={P.cyan} />
+      <rect x="27" y="14" width="3" height="2" fill={P.cyan} />
+      <rect x="24" y="18" width="5" height="2" fill={P.cyan} />
+    </>
+  );
+}
+
 const ICONS = {
   about: AboutIcon,
   portfolio: PortfolioIcon,
@@ -199,6 +221,7 @@ const ICONS = {
   visualization: VisualizationIcon,
   latex: LatexIcon,
   contact: ContactIcon,
+  bbs: BBSIcon,
 };
 
 export default function PixelIcon({ name, className = "" }) {

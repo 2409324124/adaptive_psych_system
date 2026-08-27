@@ -11,6 +11,8 @@ import Win95Window from "./Win95Window";
 import benchmarkData from "./data/benchmarks.json";
 import { systemProfile } from "./data/systemProfile";
 
+const BBS_URL = import.meta.env.VITE_BBS_URL || "https://bbs.shinonome.xyz/";
+
 const shortcuts = [
   { id: "about", label: "About Me", lines: ["About Me"], windowId: "welcome" },
   { id: "portfolio", label: "Portfolio", lines: ["Portfolio"], url: "https://portfolio.shinonome.xyz" },
@@ -32,6 +34,12 @@ const shortcuts = [
     url: "https://github.com/2409324124/Qwen-Desktop-Assistant-Classic",
   },
   { id: "contact", label: "Contact", lines: ["Contact"], url: "mailto:jzhou2409324124@gmail.com" },
+  {
+    id: "bbs",
+    label: "东云通信局",
+    lines: ["东云", "通信局"],
+    url: BBS_URL,
+  },
 ];
 
 function formatClock(date) {
@@ -153,6 +161,14 @@ export default function App() {
               让想象力夺权。
             </p>
             <p>Agent · 深度学习 · 心理学</p>
+            <a
+              className="welcome-bbs-link"
+              href={BBS_URL}
+              target="_blank"
+              rel="noreferrer"
+            >
+              连接东云通信局
+            </a>
           </div>
         </Win95Window>
       )}

@@ -7,10 +7,16 @@ const site = {
   email: "jzhou2409324124@gmail.com",
   github: "https://github.com/2409324124",
   portfolio: "https://portfolio.shinonome.xyz/",
+  bbs: "https://bbs.shinonome.xyz/",
   orcid: "https://orcid.org/0009-0008-6625-0148",
 };
 
 const projects = [
+  {
+    name: "东云通信局",
+    description: "Grey-blue text-mode BBS for technical notes, project logs, and essays.",
+    url: site.bbs,
+  },
   {
     name: "CAT-Psych",
     description: "Chinese-first adaptive Big Five personality assessment using MIRT / CAT.",
@@ -123,6 +129,7 @@ export function renderSeoFallback() {
         <p>Shinonome Personal Research Workstation</p>
         <nav aria-label="Primary navigation">
           <a href="${site.portfolio}">Projects</a>
+          <a href="${site.bbs}">BBS</a>
           <a href="https://2409324124.github.io/xeon-max-9470c-benchmarks/report/">Benchmark</a>
           <a href="#about">About</a>
           <a href="mailto:${site.email}">Contact</a>

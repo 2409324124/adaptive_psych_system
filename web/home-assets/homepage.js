@@ -9463,7 +9463,116 @@ function pe() {
 		})
 	] });
 }
-var O = {
+function O() {
+	return /* @__PURE__ */ (0, p.jsxs)(p.Fragment, { children: [
+		/* @__PURE__ */ (0, p.jsx)("rect", {
+			x: "4",
+			y: "3",
+			width: "24",
+			height: "20",
+			fill: T.black
+		}),
+		/* @__PURE__ */ (0, p.jsx)("rect", {
+			x: "3",
+			y: "2",
+			width: "24",
+			height: "20",
+			fill: T.light
+		}),
+		/* @__PURE__ */ (0, p.jsx)("rect", {
+			x: "5",
+			y: "4",
+			width: "20",
+			height: "16",
+			fill: T.dark
+		}),
+		/* @__PURE__ */ (0, p.jsx)("rect", {
+			x: "7",
+			y: "6",
+			width: "16",
+			height: "11",
+			fill: "#061d2b"
+		}),
+		/* @__PURE__ */ (0, p.jsx)("rect", {
+			x: "9",
+			y: "8",
+			width: "5",
+			height: "1",
+			fill: T.cyan
+		}),
+		/* @__PURE__ */ (0, p.jsx)("rect", {
+			x: "9",
+			y: "11",
+			width: "9",
+			height: "1",
+			fill: T.cyan
+		}),
+		/* @__PURE__ */ (0, p.jsx)("rect", {
+			x: "9",
+			y: "14",
+			width: "3",
+			height: "1",
+			fill: T.cyan
+		}),
+		/* @__PURE__ */ (0, p.jsx)("rect", {
+			x: "14",
+			y: "14",
+			width: "6",
+			height: "1",
+			fill: T.white
+		}),
+		/* @__PURE__ */ (0, p.jsx)("rect", {
+			x: "13",
+			y: "22",
+			width: "5",
+			height: "3",
+			fill: T.shadow
+		}),
+		/* @__PURE__ */ (0, p.jsx)("rect", {
+			x: "8",
+			y: "25",
+			width: "15",
+			height: "3",
+			fill: T.black
+		}),
+		/* @__PURE__ */ (0, p.jsx)("rect", {
+			x: "7",
+			y: "24",
+			width: "15",
+			height: "3",
+			fill: T.face
+		}),
+		/* @__PURE__ */ (0, p.jsx)("rect", {
+			x: "24",
+			y: "6",
+			width: "5",
+			height: "2",
+			fill: T.cyan
+		}),
+		/* @__PURE__ */ (0, p.jsx)("rect", {
+			x: "26",
+			y: "10",
+			width: "4",
+			height: "2",
+			fill: T.cyan
+		}),
+		/* @__PURE__ */ (0, p.jsx)("rect", {
+			x: "27",
+			y: "14",
+			width: "3",
+			height: "2",
+			fill: T.cyan
+		}),
+		/* @__PURE__ */ (0, p.jsx)("rect", {
+			x: "24",
+			y: "18",
+			width: "5",
+			height: "2",
+			fill: T.cyan
+		})
+	] });
+}
+var k = {
 	about: oe,
 	portfolio: se,
 	benchmark: ce,
@@ -9473,10 +9582,11 @@ var O = {
 	github: ue,
 	visualization: de,
 	latex: fe,
-	contact: pe
+	contact: pe,
+	bbs: O
 };
-function k({ name: e, className: t = "" }) {
-	let n = O[e] ?? oe;
+function me({ name: e, className: t = "" }) {
+	let n = k[e] ?? oe;
 	return /* @__PURE__ */ (0, p.jsx)("svg", {
 		className: `pixel-icon ${t}`,
 		viewBox: "0 0 32 32",
@@ -9488,7 +9598,7 @@ function k({ name: e, className: t = "" }) {
 }
 //#endregion
 //#region src/PowerScreens.jsx
-function me({ onCancel: e, onConfirm: t }) {
+function he({ onCancel: e, onConfirm: t }) {
 	return /* @__PURE__ */ (0, p.jsx)("div", {
 		className: "power-overlay",
 		children: /* @__PURE__ */ (0, p.jsxs)("section", {
@@ -9524,7 +9634,7 @@ function me({ onCancel: e, onConfirm: t }) {
 		})
 	});
 }
-function he({ onPowerOn: e }) {
+function ge({ onPowerOn: e }) {
 	return /* @__PURE__ */ (0, p.jsxs)("section", {
 		className: "power-off",
 		role: "status",
@@ -9536,7 +9646,7 @@ function he({ onPowerOn: e }) {
 		})]
 	});
 }
-var ge = {
+var _e = {
 	processor: {
 		name: "Intel Xeon CPU Max 9470C",
 		cores: 52,
@@ -9583,14 +9693,14 @@ var ge = {
 		benchmarkExplorer: "benchmark",
 		benchmarkReport: d.items.find(({ id: e }) => e === "xeon-9470c")?.action.target ?? ""
 	}
-}, _e = [
+}, ve = [
 	"CPU",
 	"Memory",
 	"Topology",
 	"Cache",
 	"Links"
 ];
-function ve() {
+function ye() {
 	return /* @__PURE__ */ (0, p.jsx)("div", {
 		className: "cpu-preview-simple",
 		role: "img",
@@ -9605,16 +9715,16 @@ function ve() {
 		})
 	});
 }
-function ye() {
+function be() {
 	return /* @__PURE__ */ (0, p.jsxs)("div", {
 		className: "cpu-preview-pane",
-		children: [/* @__PURE__ */ (0, p.jsx)(ve, {}), /* @__PURE__ */ (0, p.jsx)("span", {
+		children: [/* @__PURE__ */ (0, p.jsx)(ye, {}), /* @__PURE__ */ (0, p.jsx)("span", {
 			className: "cpu-preview-caption",
 			children: "Package"
 		})]
 	});
 }
-function be({ rows: e }) {
+function xe({ rows: e }) {
 	return /* @__PURE__ */ (0, p.jsx)("dl", {
 		className: "profile-fields",
 		children: e.map(([e, t, n = !1]) => /* @__PURE__ */ (0, p.jsxs)("div", {
@@ -9623,7 +9733,7 @@ function be({ rows: e }) {
 		}, e))
 	});
 }
-function xe({ rows: e }) {
+function Se({ rows: e }) {
 	return /* @__PURE__ */ (0, p.jsx)("dl", {
 		className: "cpu-facts",
 		children: e.map(([e, t, n = !1]) => /* @__PURE__ */ (0, p.jsxs)("div", {
@@ -9632,19 +9742,19 @@ function xe({ rows: e }) {
 		}, e))
 	});
 }
-function Se() {
-	let { processor: e, memory: t, topology: n, system: r } = ge;
+function Ce() {
+	let { processor: e, memory: t, topology: n, system: r } = _e;
 	return /* @__PURE__ */ (0, p.jsxs)("fieldset", {
 		className: "profile-group",
 		children: [/* @__PURE__ */ (0, p.jsx)("legend", { children: "Processor" }), /* @__PURE__ */ (0, p.jsxs)("div", {
 			className: "cpu-profile-layout",
-			children: [/* @__PURE__ */ (0, p.jsx)(be, { rows: [["Name", e.name], [
+			children: [/* @__PURE__ */ (0, p.jsx)(xe, { rows: [["Name", e.name], [
 				"Instructions",
 				e.instructions.join(", "),
 				!0
 			]] }), /* @__PURE__ */ (0, p.jsxs)("div", {
 				className: "cpu-profile-body",
-				children: [/* @__PURE__ */ (0, p.jsx)(xe, { rows: [
+				children: [/* @__PURE__ */ (0, p.jsx)(Se, { rows: [
 					["Cores", e.cores],
 					["Threads", e.threads],
 					["NUMA Mode", n.numaMode],
@@ -9656,16 +9766,16 @@ function Se() {
 						r.os,
 						!0
 					]
-				] }), /* @__PURE__ */ (0, p.jsx)(ye, {})]
+				] }), /* @__PURE__ */ (0, p.jsx)(be, {})]
 			})]
 		})]
 	});
 }
-function Ce() {
-	let { memory: e } = ge;
+function we() {
+	let { memory: e } = _e;
 	return /* @__PURE__ */ (0, p.jsxs)("fieldset", {
 		className: "profile-group",
-		children: [/* @__PURE__ */ (0, p.jsx)("legend", { children: "Memory" }), /* @__PURE__ */ (0, p.jsx)(be, { rows: [
+		children: [/* @__PURE__ */ (0, p.jsx)("legend", { children: "Memory" }), /* @__PURE__ */ (0, p.jsx)(xe, { rows: [
 			["Memory Type", e.type],
 			["Capacity", e.capacity],
 			["Configuration", e.configuration],
@@ -9673,11 +9783,11 @@ function Ce() {
 		] })]
 	});
 }
-function we() {
-	let { processor: e, topology: t } = ge;
+function Te() {
+	let { processor: e, topology: t } = _e;
 	return /* @__PURE__ */ (0, p.jsxs)("fieldset", {
 		className: "profile-group",
-		children: [/* @__PURE__ */ (0, p.jsx)("legend", { children: "CPU / NUMA Topology" }), /* @__PURE__ */ (0, p.jsx)(be, { rows: [
+		children: [/* @__PURE__ */ (0, p.jsx)("legend", { children: "CPU / NUMA Topology" }), /* @__PURE__ */ (0, p.jsx)(xe, { rows: [
 			["Cores", e.cores],
 			["Threads", e.threads],
 			["NUMA Mode", t.numaMode],
@@ -9685,13 +9795,13 @@ function we() {
 		] })]
 	});
 }
-function Te() {
+function Ee() {
 	return /* @__PURE__ */ (0, p.jsxs)("fieldset", {
 		className: "profile-group",
-		children: [/* @__PURE__ */ (0, p.jsx)("legend", { children: "Cache" }), /* @__PURE__ */ (0, p.jsx)(be, { rows: [["Detailed cache information", ge.cache.status]] })]
+		children: [/* @__PURE__ */ (0, p.jsx)("legend", { children: "Cache" }), /* @__PURE__ */ (0, p.jsx)(xe, { rows: [["Detailed cache information", _e.cache.status]] })]
 	});
 }
-function Ee({ onOpenBenchmarkExplorer: e, onOpenBenchmarkReport: t }) {
+function De({ onOpenBenchmarkExplorer: e, onOpenBenchmarkReport: t }) {
 	return /* @__PURE__ */ (0, p.jsxs)("fieldset", {
 		className: "profile-group profile-links",
 		children: [
@@ -9721,11 +9831,11 @@ function Ee({ onOpenBenchmarkExplorer: e, onOpenBenchmarkReport: t }) {
 		]
 	});
 }
-function De({ onClose: e, onOpenBenchmarkExplorer: t, onOpenBenchmarkReport: n }) {
+function Oe({ onClose: e, onOpenBenchmarkExplorer: t, onOpenBenchmarkReport: n }) {
 	let [r, i] = (0, l.useState)("CPU");
 	function a(e) {
-		let t = _e.indexOf(r), n = t;
-		e.key === "ArrowRight" && (n = (t + 1) % _e.length), e.key === "ArrowLeft" && (n = (t - 1 + _e.length) % _e.length), e.key === "Home" && (n = 0), e.key === "End" && (n = _e.length - 1), n !== t && (e.preventDefault(), i(_e[n]));
+		let t = ve.indexOf(r), n = t;
+		e.key === "ArrowRight" && (n = (t + 1) % ve.length), e.key === "ArrowLeft" && (n = (t - 1 + ve.length) % ve.length), e.key === "Home" && (n = 0), e.key === "End" && (n = ve.length - 1), n !== t && (e.preventDefault(), i(ve[n]));
 	}
 	return /* @__PURE__ */ (0, p.jsxs)("div", {
 		className: "system-profiler",
@@ -9734,7 +9844,7 @@ function De({ onClose: e, onOpenBenchmarkExplorer: t, onOpenBenchmarkReport: n }
 				className: "profile-tabs",
 				role: "tablist",
 				"aria-label": "System profile sections",
-				children: _e.map((e) => /* @__PURE__ */ (0, p.jsx)("button", {
+				children: ve.map((e) => /* @__PURE__ */ (0, p.jsx)("button", {
 					id: `profile-tab-${e.toLowerCase()}`,
 					className: r === e ? "is-active" : "",
 					type: "button",
@@ -9753,11 +9863,11 @@ function De({ onClose: e, onOpenBenchmarkExplorer: t, onOpenBenchmarkReport: n }
 				role: "tabpanel",
 				"aria-labelledby": `profile-tab-${r.toLowerCase()}`,
 				children: [
-					r === "CPU" && /* @__PURE__ */ (0, p.jsx)(Se, {}),
-					r === "Memory" && /* @__PURE__ */ (0, p.jsx)(Ce, {}),
-					r === "Topology" && /* @__PURE__ */ (0, p.jsx)(we, {}),
-					r === "Cache" && /* @__PURE__ */ (0, p.jsx)(Te, {}),
-					r === "Links" && /* @__PURE__ */ (0, p.jsx)(Ee, {
+					r === "CPU" && /* @__PURE__ */ (0, p.jsx)(Ce, {}),
+					r === "Memory" && /* @__PURE__ */ (0, p.jsx)(we, {}),
+					r === "Topology" && /* @__PURE__ */ (0, p.jsx)(Te, {}),
+					r === "Cache" && /* @__PURE__ */ (0, p.jsx)(Ee, {}),
+					r === "Links" && /* @__PURE__ */ (0, p.jsx)(De, {
 						onOpenBenchmarkExplorer: t,
 						onOpenBenchmarkReport: n
 					})
@@ -9791,8 +9901,8 @@ function De({ onClose: e, onOpenBenchmarkExplorer: t, onOpenBenchmarkReport: n }
 }
 //#endregion
 //#region src/Win95Window.jsx
-var Oe = 44;
-function ke({ id: e, title: t, windowState: n, dispatch: r, children: i, menu: a = !0, menuItems: o = [
+var ke = 44;
+function Ae({ id: e, title: t, windowState: n, dispatch: r, children: i, menu: a = !0, menuItems: o = [
 	"File",
 	"Edit",
 	"Search",
@@ -9812,7 +9922,7 @@ function ke({ id: e, title: t, windowState: n, dispatch: r, children: i, menu: a
 	}
 	function f(t) {
 		if (!u.current || n.maximized) return;
-		let i = c.current.getBoundingClientRect(), a = Math.max(4, window.innerWidth - i.width - 4), o = Math.max(4, window.innerHeight - Oe - 30);
+		let i = c.current.getBoundingClientRect(), a = Math.max(4, window.innerWidth - i.width - 4), o = Math.max(4, window.innerHeight - ke - 30);
 		r({
 			type: "move-window",
 			id: e,
@@ -9921,7 +10031,7 @@ function ke({ id: e, title: t, windowState: n, dispatch: r, children: i, menu: a
 }
 //#endregion
 //#region src/App.jsx
-var Ae = [
+var je = "https://bbs.shinonome.xyz/", Me = [
 	{
 		id: "about",
 		label: "About Me",
@@ -9981,15 +10091,21 @@ var Ae = [
 		label: "Contact",
 		lines: ["Contact"],
 		url: "mailto:jzhou2409324124@gmail.com"
+	},
+	{
+		id: "bbs",
+		label: "东云通信局",
+		lines: ["东云", "通信局"],
+		url: je
 	}
 ];
-function je(e) {
+function Ne(e) {
 	return e.toLocaleTimeString([], {
 		hour: "numeric",
 		minute: "2-digit"
 	});
 }
-function Me({ onOpenShortcut: e, onClose: t, onRestart: n, onShutdown: r }) {
+function Pe({ onOpenShortcut: e, onClose: t, onRestart: n, onShutdown: r }) {
 	let i = [
 		{
 			label: "Programs",
@@ -10001,16 +10117,16 @@ function Me({ onOpenShortcut: e, onClose: t, onRestart: n, onShutdown: r }) {
 		},
 		{
 			label: "Benchmarks",
-			shortcut: Ae.find(({ id: e }) => e === "benchmark")
+			shortcut: Me.find(({ id: e }) => e === "benchmark")
 		},
 		{ separator: !0 },
 		{
 			label: "GitHub",
-			shortcut: Ae.find(({ id: e }) => e === "github")
+			shortcut: Me.find(({ id: e }) => e === "github")
 		},
 		{
 			label: "Contact",
-			shortcut: Ae.find(({ id: e }) => e === "contact")
+			shortcut: Me.find(({ id: e }) => e === "contact")
 		},
 		{ separator: !0 },
 		{
@@ -10057,7 +10173,7 @@ function Me({ onOpenShortcut: e, onClose: t, onRestart: n, onShutdown: r }) {
 		})]
 	});
 }
-function Ne() {
+function Fe() {
 	let [e, t] = (0, l.useReducer)(ae, w), [n, r] = (0, l.useState)(() => /* @__PURE__ */ new Date()), [i, a] = (0, l.useState)("on"), o = d.items.find(({ id: t }) => t === e.windows.evidence.documentId);
 	(0, l.useEffect)(() => {
 		let e = window.setInterval(() => r(/* @__PURE__ */ new Date()), 3e4);
@@ -10086,7 +10202,7 @@ function Ne() {
 				/* @__PURE__ */ (0, p.jsx)("nav", {
 					className: "desktop-shortcuts",
 					"aria-label": "桌面快捷方式",
-					children: Ae.map((t) => /* @__PURE__ */ (0, p.jsxs)("button", {
+					children: Me.map((t) => /* @__PURE__ */ (0, p.jsxs)("button", {
 						type: "button",
 						"aria-label": `打开 ${t.label}`,
 						"aria-pressed": e.selectedShortcut === t.id,
@@ -10099,14 +10215,14 @@ function Ne() {
 						children: [/* @__PURE__ */ (0, p.jsx)("span", {
 							className: "desktop-icon-wrap",
 							"aria-hidden": "true",
-							children: /* @__PURE__ */ (0, p.jsx)(k, { name: t.id })
+							children: /* @__PURE__ */ (0, p.jsx)(me, { name: t.id })
 						}), /* @__PURE__ */ (0, p.jsx)("span", {
 							className: "desktop-label",
 							children: t.lines.map((e) => /* @__PURE__ */ (0, p.jsx)("span", { children: e }, e))
 						})]
 					}, t.id))
 				}),
-				l && e.windows.welcome.open && !e.windows.welcome.minimized && /* @__PURE__ */ (0, p.jsx)(ke, {
+				l && e.windows.welcome.open && !e.windows.welcome.minimized && /* @__PURE__ */ (0, p.jsx)(Ae, {
 					id: "welcome",
 					title: "WELCOME.TXT",
 					windowState: e.windows.welcome,
@@ -10121,11 +10237,18 @@ function Ne() {
 								/* @__PURE__ */ (0, p.jsx)("br", {}),
 								"让想象力夺权。"
 							] }),
-							/* @__PURE__ */ (0, p.jsx)("p", { children: "Agent · 深度学习 · 心理学" })
+							/* @__PURE__ */ (0, p.jsx)("p", { children: "Agent · 深度学习 · 心理学" }),
+							/* @__PURE__ */ (0, p.jsx)("a", {
+								className: "welcome-bbs-link",
+								href: je,
+								target: "_blank",
+								rel: "noreferrer",
+								children: "连接东云通信局"
+							})
 						]
 					})
 				}),
-				e.windows.benchmark.open && !e.windows.benchmark.minimized && /* @__PURE__ */ (0, p.jsx)(ke, {
+				e.windows.benchmark.open && !e.windows.benchmark.minimized && /* @__PURE__ */ (0, p.jsx)(Ae, {
 					id: "benchmark",
 					title: "Benchmark Explorer",
 					windowState: e.windows.benchmark,
@@ -10144,7 +10267,7 @@ function Ne() {
 						});
 					} })
 				}),
-				e.windows["system-profiler"].open && !e.windows["system-profiler"].minimized && /* @__PURE__ */ (0, p.jsx)(ke, {
+				e.windows["system-profiler"].open && !e.windows["system-profiler"].minimized && /* @__PURE__ */ (0, p.jsx)(Ae, {
 					id: "system-profiler",
 					title: "Shinonome System Profiler",
 					windowState: e.windows["system-profiler"],
@@ -10156,19 +10279,19 @@ function Ne() {
 						"View",
 						"Help"
 					],
-					children: /* @__PURE__ */ (0, p.jsx)(De, {
+					children: /* @__PURE__ */ (0, p.jsx)(Oe, {
 						onClose: () => t({
 							type: "close-window",
 							id: "system-profiler"
 						}),
 						onOpenBenchmarkExplorer: () => t({
 							type: "open-window",
-							id: ge.links.benchmarkExplorer
+							id: _e.links.benchmarkExplorer
 						}),
-						onOpenBenchmarkReport: () => window.open(ge.links.benchmarkReport, "_blank", "noopener,noreferrer")
+						onOpenBenchmarkReport: () => window.open(_e.links.benchmarkReport, "_blank", "noopener,noreferrer")
 					})
 				}),
-				e.windows.evidence.open && !e.windows.evidence.minimized && o && /* @__PURE__ */ (0, p.jsx)(ke, {
+				e.windows.evidence.open && !e.windows.evidence.minimized && o && /* @__PURE__ */ (0, p.jsx)(Ae, {
 					id: "evidence",
 					title: o.fileName,
 					windowState: e.windows.evidence,
@@ -10176,7 +10299,7 @@ function Ne() {
 					isActive: e.activeWindow === "evidence",
 					children: /* @__PURE__ */ (0, p.jsx)(re, { item: o })
 				}),
-				e.startOpen && /* @__PURE__ */ (0, p.jsx)(Me, {
+				e.startOpen && /* @__PURE__ */ (0, p.jsx)(Pe, {
 					onOpenShortcut: s,
 					onClose: () => t({ type: "close-start" }),
 					onRestart: u,
@@ -10230,23 +10353,23 @@ function Ne() {
 								children: "◖))"
 							}), /* @__PURE__ */ (0, p.jsx)("time", {
 								dateTime: n.toISOString(),
-								children: je(n)
+								children: Ne(n)
 							})]
 						})
 					]
 				})
 			]
 		}),
-		i === "shutdown-dialog" && /* @__PURE__ */ (0, p.jsx)(me, {
+		i === "shutdown-dialog" && /* @__PURE__ */ (0, p.jsx)(he, {
 			onCancel: () => a("on"),
 			onConfirm: () => a("off")
 		}),
-		i === "off" && /* @__PURE__ */ (0, p.jsx)(he, { onPowerOn: () => {
+		i === "off" && /* @__PURE__ */ (0, p.jsx)(ge, { onPowerOn: () => {
 			a("on"), u();
 		} })
 	] }) });
 }
 //#endregion
 //#region src/main.jsx
-(0, u.createRoot)(document.getElementById("root")).render(/* @__PURE__ */ (0, p.jsx)(l.StrictMode, { children: /* @__PURE__ */ (0, p.jsx)(Ne, {}) }));
+(0, u.createRoot)(document.getElementById("root")).render(/* @__PURE__ */ (0, p.jsx)(l.StrictMode, { children: /* @__PURE__ */ (0, p.jsx)(Fe, {}) }));
 //#endregion

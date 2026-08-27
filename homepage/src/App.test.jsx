@@ -16,6 +16,7 @@ describe("Shinonome desktop", () => {
   afterEach(() => {
     vi.useRealTimers();
     vi.unstubAllGlobals();
+    vi.restoreAllMocks();
   });
 
   it("boots Shinonome 95 through hard-cut system phases on first visit", () => {
@@ -66,7 +67,7 @@ describe("Shinonome desktop", () => {
     expect(screen.getByText("Agent · 深度学习 · 心理学")).toBeTruthy();
   });
 
-  it("uses the ten desktop shortcuts as the homepage navigation", () => {
+  it("uses eleven desktop shortcuts including 东云通信局", () => {
     render(<App />);
 
     const labels = [
@@ -80,13 +81,31 @@ describe("Shinonome desktop", () => {
       "Programming Visualization",
       "Qwen3 LaTeX",
       "Contact",
+      "东云通信局",
     ];
 
     expect(screen.getByRole("navigation", { name: "桌面快捷方式" })).toBeTruthy();
-    expect(screen.getAllByRole("button", { name: /打开/ })).toHaveLength(10);
+    expect(screen.getAllByRole("button", { name: /打开/ })).toHaveLength(11);
     labels.forEach((label) => {
       expect(screen.getByRole("button", { name: `打开 ${label}` })).toBeTruthy();
     });
+  });
+
+  it("links to the BBS from both the desktop and welcome note", async () => {
+    const user = userEvent.setup();
+    const openSpy = vi.spyOn(window, "open").mockImplementation(() => null);
+    render(<App />);
+
+    await user.dblClick(screen.getByRole("button", { name: "打开 东云通信局" }));
+
+    expect(openSpy).toHaveBeenCalledWith(
+      "https://bbs.shinonome.xyz/",
+      "_blank",
+      "noopener,noreferrer",
+    );
+    const welcomeLink = screen.getByRole("link", { name: "连接东云通信局" });
+    expect(welcomeLink.getAttribute("href")).toBe("https://bbs.shinonome.xyz/");
+    expect(welcomeLink.getAttribute("target")).toBe("_blank");
   });
 
   it("opens the Xeon shortcut in Shinonome System Profiler", async () => {
